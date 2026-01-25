@@ -1,5 +1,8 @@
 # 🐝 Swarm - Parallel Task Execution for Clawdbot
 
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](./CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-24%20passing-green.svg)](./test)
+
 **Turn sequential tasks into parallel operations. Same cost, dramatically faster.**
 
 ## What is Swarm?
@@ -114,6 +117,26 @@ npm run diagnose       # Health check
 npm run diagnose:json  # Machine-readable diagnostics
 npm test               # Run all tests
 ```
+
+## Daemon Mode (Fastest)
+
+For instant response times, run the Swarm daemon:
+
+```bash
+# Start daemon (keeps workers warm)
+swarm-daemon start
+
+# Check status
+swarm-daemon status
+
+# Make requests (instant TTFT)
+swarm research OpenAI Anthropic Mistral --topic "AI 2024"
+```
+
+**Performance with daemon:**
+- Time to first token: <10ms
+- Workers pre-warmed and ready
+- API connections pooled
 
 ## Troubleshooting
 
