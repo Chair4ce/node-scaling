@@ -5,7 +5,9 @@
   "main": "lib/index.js",
   "bin": {
     "node-scaling-setup": "./bin/setup.js",
-    "swarm-stats": "./bin/swarm-stats.js"
+    "swarm-stats": "./bin/swarm-stats.js",
+    "swarm-daemon": "./bin/swarm-daemon.js",
+    "swarm": "./bin/swarm.js"
   },
   "scripts": {
     "setup": "node bin/setup.js",
