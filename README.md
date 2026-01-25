@@ -10,7 +10,25 @@ Turn a 3-minute research task into a 9-second operation. Same cost, dramatically
 
 ## What is This?
 
-Node Scaling adds parallel processing capabilities to Clawdbot by spinning up lightweight LLM worker nodes. Instead of processing tasks sequentially, it distributes work across multiple workers running cheap models like Gemini Flash.
+**Swarm** adds parallel processing capabilities to Clawdbot by spinning up lightweight LLM worker nodes. Instead of processing tasks sequentially, it distributes work across multiple workers running cheap models like Gemini Flash.
+
+### 🆕 Code Swarm (v0.2.0)
+Generate code in parallel! The orchestrator plans, workers generate discrete functions simultaneously:
+
+```javascript
+const { CodeSwarm } = require('@clawdbot/node-scaling');
+const swarm = new CodeSwarm();
+
+// Generate 5 utility functions in parallel
+const functions = await swarm.generateFunctions([
+  { name: 'formatDate', description: 'Format Date to YYYY-MM-DD' },
+  { name: 'slugify', description: 'Convert string to URL slug' },
+  { name: 'debounce', description: 'Debounce a function' },
+  { name: 'deepClone', description: 'Deep clone an object' },
+  { name: 'randomId', description: 'Generate random ID' },
+]);
+// ⏱️ 1.7s parallel vs ~6s sequential = 3.5x faster!
+```
 
 ```
 ┌────────────────────────────────────────────────────┐
@@ -100,6 +118,16 @@ node_scaling:
 3. **Parallel Execution**: Workers process tasks simultaneously using cheap LLMs
 4. **Aggregation**: Results collected and synthesized by the coordinator
 5. **Node Recycling**: Workers are reused across phases
+
+### User Feedback
+Swarm announces when it's working so you know it's speeding things up:
+```
+🐝 INITIALIZING SWARM... (3 phases, up to 10 workers)
+   [searching in parallel...]
+   [fetching in parallel...]
+   [analyzing in parallel...]
+🐝 SWARM COMPLETE ✓ 15/15 tasks in 6.4s
+```
 
 ## Example Usage
 
