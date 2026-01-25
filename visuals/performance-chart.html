@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+    .container {
+      background: rgba(255,255,255,0.03);
+      border-radius: 24px;
+      padding: 48px;
+      max-width: 950px;
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .subtitle {
+      color: rgba(255,255,255,0.6);
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+    .chart {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .chart-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 80px;
+      align-items: center;
+      gap: 16px;
+    }
+    .label {
+      color: #fff;
+      font-size: 13px;
+      text-align: right;
+    }
+    .label small {
+      display: block;
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+    }
+    .bars {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .bar-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bar {
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 11px;
+      color: white;
+      font-weight: 500;
+      min-width: 40px;
+    }
+    .bar-single {
+      background: linear-gradient(90deg, #ff6b6b 0%, #ee5a5a 100%);
+    }
+    .bar-multi {
+      background: linear-gradient(90deg, #51cf66 0%, #40c057 100%);
+    }
+    .speedup {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 16px;
+      text-align: center;
+    }
+    .speedup.highlight {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 20px rgba(240, 147, 251, 0.4);
+    }
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.8);
+      font-size: 13px;
+    }
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+    .section-label {
+      color: rgba(255,255,255,0.4);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 16px 0 8px 0;
+      padding-left: 196px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Performance Comparison</h1>
+    <p class="subtitle">Sequential (Single Node) vs Parallel (Multi-Node) Execution</p>
+    
+    <div class="chart">
+      <div class="section-label">Simple Tasks</div>
+      
+      <div class="chart-row">
+        <div class="label">5 Quick Questions<small>Factual queries</small></div>
+        <div class="bars">
+          <div class="bar-container">
+            <div class="bar bar-single" style="width: 23%;">2.3s</div>
+          </div>
+          <div class="bar-container">
+            <div class="bar bar-multi" style="width: 9%;">0.9s</div>
+          </div>
+        </div>
+        <div class="speedup">2.5x</div>
+      </div>
+      
+      <div class="chart-row">
+        <div class="label">10 Quick Questions<small>Parallel factual</small></div>
+        <div class="bars">
+          <div class="bar-container">
+            <div class="bar bar-single" style="width: 44%;">4.4s</div>
+          </div>
+          <div class="bar-container">
+            <div class="bar bar-multi" style="width: 10%;">1.0s</div>
+          </div>
+        </div>
+        <div class="speedup">4.3x</div>
+      </div>
+      
+      <div class="section-label">Medium Tasks</div>
+      
+      <div class="chart-row">
+        <div class="label">5 Web Searches<small>Search API calls</small></div>
+        <div class="bars">
+          <div class="bar-container">
+            <div class="bar bar-single" style="width: 62%;">6.2s</div>
+          </div>
+          <div class="bar-container">
+            <div class="bar bar-multi" style="width: 16%;">1.6s</div>
+          </div>
+        </div>
+        <div class="speedup">3.8x</div>
+      </div>
+      
+      <div class="chart-row">
+        <div class="label">10 Summaries<small>LLM summarization</small></div>
+        <div class="bars">
+          <div class="bar-container">
+            <div class="bar bar-single" style="width: 74%;">7.4s</div>
+          </div>
+          <div class="bar-container">
+            <div class="bar bar-multi" style="width: 9%;">0.9s</div>
+          </div>
+        </div>
+        <div class="speedup">8.0x</div>
+      </div>
+      
+      <div class="section-label">Complex Tasks</div>
+      
+      <div class="chart-row">
+        <div class="label">5 Company Research<small>Search→Fetch→Analyze</small></div>
+        <div class="bars">
+          <div class="bar-container">
+            <div class="bar bar-single" style="width: 90%;">17.9s</div>
+          </div>
+          <div class="bar-container">
+            <div class="bar bar-multi" style="width: 30%;">6.0s</div>
+          </div>
+        </div>
+        <div class="speedup">3.0x</div>
+      </div>
+      
+      <div class="chart-row">
+        <div class="label">10 Tech Analyses<small>Deep technical review</small></div>
+        <div class="bars">
+          <div class="bar-container">
+            <div class="bar bar-single" style="width: 100%;">166s</div>
+          </div>
+          <div class="bar-container">
+            <div class="bar bar-multi" style="width: 5%;">9.2s</div>
+          </div>
+        </div>
+        <div class="speedup highlight">18.2x</div>
+      </div>
+      
+      <div class="section-label">Very Complex Tasks</div>
+      
+      <div class="chart-row">
+        <div class="label">15-Subject Research<small>Full pipeline × 15</small></div>
+        <div class="bars">
+          <div class="bar-container">
+            <div class="bar bar-single" style="width: 49%;">49s</div>
+          </div>
+          <div class="bar-container">
+            <div class="bar bar-multi" style="width: 6%;">6.4s</div>
+          </div>
+        </div>
+        <div class="speedup">7.7x</div>
+      </div>
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color bar-single"></div>
+        <span>Sequential (Single Node)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color bar-multi"></div>
+        <span>Parallel (Multi-Node)</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

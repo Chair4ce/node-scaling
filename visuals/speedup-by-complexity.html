@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+    .container {
+      background: rgba(255,255,255,0.02);
+      border-radius: 24px;
+      padding: 48px;
+      max-width: 800px;
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      font-size: 14px;
+      margin-bottom: 48px;
+    }
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 32px;
+      height: 300px;
+      padding: 0 20px;
+    }
+    .bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .bar {
+      width: 100px;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 16px;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+    .bar:hover {
+      transform: translateY(-4px);
+    }
+    .bar-value {
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .bar-label {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .bar-sublabel {
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+      text-align: center;
+      max-width: 100px;
+    }
+    .simple { background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%); }
+    .medium { background: linear-gradient(180deg, #43e97b 0%, #38f9d7 100%); }
+    .complex { background: linear-gradient(180deg, #fa709a 0%, #fee140 100%); }
+    .vcomplex { background: linear-gradient(180deg, #f093fb 0%, #f5576c 100%); }
+    
+    .insight {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 40px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .insight h3 {
+      color: #00d9ff;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .insight p {
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .highlight {
+      color: #f5576c;
+      font-weight: bold;
+    }
+    .axis {
+      border-top: 2px solid rgba(255,255,255,0.2);
+      margin-top: 20px;
+      padding-top: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .axis-label {
+      color: rgba(255,255,255,0.4);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📈 Speedup Scales with Complexity</h1>
+    <p class="subtitle">The harder the task, the more parallelization helps</p>
+    
+    <div class="chart">
+      <div class="bar-group">
+        <div class="bar simple" style="height: 85px;">
+          <div class="bar-value">3.4x</div>
+        </div>
+        <div class="bar-label">Simple</div>
+        <div class="bar-sublabel">Quick queries</div>
+      </div>
+      
+      <div class="bar-group">
+        <div class="bar medium" style="height: 148px;">
+          <div class="bar-value">5.9x</div>
+        </div>
+        <div class="bar-label">Medium</div>
+        <div class="bar-sublabel">Search & summary</div>
+      </div>
+      
+      <div class="bar-group">
+        <div class="bar complex" style="height: 265px;">
+          <div class="bar-value">10.6x</div>
+        </div>
+        <div class="bar-label">Complex</div>
+        <div class="bar-sublabel">Multi-phase pipelines</div>
+      </div>
+      
+      <div class="bar-group">
+        <div class="bar vcomplex" style="height: 193px;">
+          <div class="bar-value">7.7x+</div>
+        </div>
+        <div class="bar-label">Very Complex</div>
+        <div class="bar-sublabel">Large-scale research</div>
+      </div>
+    </div>
+    
+    <div class="axis">
+      <span class="axis-label">Task Complexity →</span>
+    </div>
+    
+    <div class="insight">
+      <h3>💡 Key Insight</h3>
+      <p>
+        Complex tasks with <span class="highlight">10+ independent subtasks</span> see the biggest gains.
+        <br>Our 10-analysis benchmark hit <span class="highlight">18.2x speedup</span> — turning a 2.8 minute wait into 9 seconds.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

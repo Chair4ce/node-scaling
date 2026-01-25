@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.DS_Store
+*.local.*
+benchmark-report-*.json
+# Don't commit API keys
+*-key.txt

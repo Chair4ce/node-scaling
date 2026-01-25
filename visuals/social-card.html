@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .card {
+      width: 600px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 24px;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+    }
+    .badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #fff;
+      font-size: 36px;
+      line-height: 1.2;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .highlight {
+      background: linear-gradient(90deg, #00d9ff, #00f2fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin: 32px 0;
+      position: relative;
+    }
+    .stat {
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px 12px;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #00d9ff;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+    }
+    .comparison {
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 24px 0;
+      position: relative;
+    }
+    .comparison-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .comparison-row:last-child { margin-bottom: 0; }
+    .comparison-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+    }
+    .comparison-values {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .old-value {
+      color: #ff6b6b;
+      text-decoration: line-through;
+      font-size: 14px;
+    }
+    .new-value {
+      color: #51cf66;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .arrow {
+      color: #00d9ff;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      position: relative;
+    }
+    .author {
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+    }
+    .logo {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .emoji { font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">🔬 Research Results</div>
+    <h1>
+      AI Agent Tasks<br>
+      <span class="highlight">6.8x Faster</span><br>
+      With Node Scaling
+    </h1>
+    
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">18.2x</div>
+        <div class="stat-label">Best Speedup</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">$0</div>
+        <div class="stat-label">Extra Cost</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">Success Rate</div>
+      </div>
+    </div>
+    
+    <div class="comparison">
+      <div class="comparison-row">
+        <span class="comparison-label">10 Tech Analyses</span>
+        <div class="comparison-values">
+          <span class="old-value">166s</span>
+          <span class="arrow">→</span>
+          <span class="new-value">9.2s</span>
+        </div>
+      </div>
+      <div class="comparison-row">
+        <span class="comparison-label">15-Subject Research</span>
+        <div class="comparison-values">
+          <span class="old-value">49s</span>
+          <span class="arrow">→</span>
+          <span class="new-value">6.4s</span>
+        </div>
+      </div>
+      <div class="comparison-row">
+        <span class="comparison-label">20 Deep Analyses</span>
+        <div class="comparison-values">
+          <span class="old-value">>60min</span>
+          <span class="arrow">→</span>
+          <span class="new-value">~15s</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <span class="author">Built by Jacy & Jarvis</span>
+      <span class="logo"><span class="emoji">🤖</span> Clawdbot</span>
+    </div>
+  </div>
+</body>
+</html>

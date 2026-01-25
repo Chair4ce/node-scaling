@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "date": "2026-01-25",
+    "maxNodes": 100,
+    "llmModel": "gemini-2.0-flash",
+    "totalBenchmarks": 8,
+    "completedBenchmarks": 7
+  },
+  "results": [
+    {
+      "name": "Simple: 5 Quick Questions",
+      "complexity": "simple",
+      "parallelism": 5,
+      "singleNode": { "durationMs": 2331 },
+      "multiNode": { "durationMs": 916, "nodesUsed": 5 },
+      "speedup": 2.54,
+      "timeSavedMs": 1415
+    },
+    {
+      "name": "Simple: 10 Quick Questions",
+      "complexity": "simple",
+      "parallelism": 10,
+      "singleNode": { "durationMs": 4372 },
+      "multiNode": { "durationMs": 1019, "nodesUsed": 10 },
+      "speedup": 4.29,
+      "timeSavedMs": 3353
+    },
+    {
+      "name": "Medium: 5 Web Searches",
+      "complexity": "medium",
+      "parallelism": 5,
+      "singleNode": { "durationMs": 6205 },
+      "multiNode": { "durationMs": 1639, "nodesUsed": 5 },
+      "speedup": 3.79,
+      "timeSavedMs": 4566
+    },
+    {
+      "name": "Medium: 10 Summaries",
+      "complexity": "medium",
+      "parallelism": 10,
+      "singleNode": { "durationMs": 7414 },
+      "multiNode": { "durationMs": 923, "nodesUsed": 10 },
+      "speedup": 8.03,
+      "timeSavedMs": 6491
+    },
+    {
+      "name": "Complex: 5 Company Research",
+      "complexity": "complex",
+      "parallelism": 5,
+      "singleNode": { "durationMs": 17898 },
+      "multiNode": { "durationMs": 5982, "nodesUsed": 15 },
+      "speedup": 2.99,
+      "timeSavedMs": 11916,
+      "phases": {
+        "search": { "tasks": 5, "durationMs": 1818 },
+        "fetch": { "tasks": 5, "durationMs": 433 },
+        "analyze": { "tasks": 5, "durationMs": 3730 }
+      }
+    },
+    {
+      "name": "Complex: 10 Tech Analysis",
+      "complexity": "complex",
+      "parallelism": 10,
+      "singleNode": { "durationMs": 166223 },
+      "multiNode": { "durationMs": 9154, "nodesUsed": 10 },
+      "speedup": 18.16,
+      "timeSavedMs": 157069
+    },
+    {
+      "name": "Very Complex: 15-Subject Research",
+      "complexity": "very-complex",
+      "parallelism": 15,
+      "singleNode": { "durationMs": 49062 },
+      "multiNode": { "durationMs": 6400, "nodesUsed": 45 },
+      "speedup": 7.67,
+      "timeSavedMs": 42662,
+      "phases": {
+        "search": { "tasks": 15, "durationMs": 1647 },
+        "fetch": { "tasks": 15, "durationMs": 1466 },
+        "analyze": { "tasks": 15, "durationMs": 3285 }
+      }
+    },
+    {
+      "name": "Very Complex: 20 Parallel Analyses",
+      "complexity": "very-complex",
+      "parallelism": 20,
+      "singleNode": { "durationMs": null, "status": "killed_after_60min" },
+      "multiNode": { "durationMs": null, "estimatedMs": 15000 },
+      "speedup": null,
+      "note": "Single-node execution exceeded 60 minutes and was terminated"
+    }
+  ],
+  "summary": {
+    "avgSpeedup": 6.78,
+    "maxSpeedup": 18.16,
+    "totalTimeSavedMs": 227472,
+    "totalSingleNodeMs": 253505,
+    "totalMultiNodeMs": 26033
+  }
+}
