@@ -246,21 +246,74 @@ async function main() {
   const configPath = saveConfig(config);
   print(`  ✓ Configuration saved to: ${configPath}`);
   
-  // Done!
+  // Run diagnostics/tests
   print('\n' + '═'.repeat(50));
-  print('');
-  box([
-    '✅ Setup complete! Node scaling is now enabled.',
-    '',
-    'Try asking Clawdbot:',
-    '  "Research the top 5 AI companies and compare them"',
-    '  "Analyze these 10 URLs in parallel"',
-    '',
-    `Config: ${configPath}`,
-  ], '🎉 Success!');
+  print('\nStep 4: Verifying installation...\n');
+  
+  const { runDiagnostics, printReport } = require('../lib/diagnostics');
+  
+  // Run diagnostics with API key in environment
+  process.env[provider.envVar] = apiKey;
+  
+  const report = await runDiagnostics({
+    runTests: true,
+    skipE2e: false,
+  });
+  
+  printReport(report);
+  
+  // Save machine profile to config
+  const profilePath = path.join(CONFIG_DIR, 'swarm-profile.json');
+  fs.writeFileSync(profilePath, JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    machine: report.machine,
+    recommendations: report.recommendations,
+    config: {
+      maxNodes: maxNodes,
+      provider: provider.id,
+    }
+  }, null, 2));
+  print(`  Machine profile saved to: ${profilePath}`);
+  
+  // Final status
+  print('\n' + '═'.repeat(50));
+  
+  if (report.status === 'ok') {
+    print('');
+    box([
+      '✅ Setup complete! All tests passed.',
+      '',
+      'Swarm is ready to use. Try:',
+      '  "Research the top 5 AI companies"',
+      '  "Analyze these 10 URLs in parallel"',
+      '',
+      `Config: ${configPath}`,
+    ], '🎉 Success!');
+  } else if (report.status === 'warning') {
+    print('');
+    box([
+      '⚠️  Setup complete with warnings.',
+      '',
+      'Swarm should work, but check the warnings above.',
+      '',
+      `Config: ${configPath}`,
+    ], '⚠️  Warning');
+  } else {
+    print('');
+    box([
+      '❌ Setup complete but tests failed.',
+      '',
+      'See errors above. You may need to fix issues',
+      'before Swarm will work correctly.',
+      '',
+      'Run diagnostics again: node bin/diagnose.js',
+    ], '❌ Issues Found');
+  }
+  
   print('');
   
   rl.close();
+  process.exit(report.status === 'error' ? 1 : 0);
 }
 
 main().catch(err => {

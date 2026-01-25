@@ -127,28 +127,144 @@ const stats = dispatcher.getNodeStats();
 // Returns cost estimates per provider
 ```
 
-## Troubleshooting
+## Diagnostics & Troubleshooting
 
-### "No configuration found"
-Run setup: `cd ~/clawd/skills/node-scaling && node bin/setup.js`
+### Run Diagnostics
 
-### "API key invalid"
-Check environment variable is set:
+When Swarm isn't working, run diagnostics first:
+
 ```bash
-echo $GEMINI_API_KEY  # or appropriate var
+cd ~/clawd/skills/node-scaling && npm run diagnose
 ```
 
-### "Max nodes reached"
-Increase in config or wait for nodes to become available:
+For JSON output (easier to parse):
+```bash
+cd ~/clawd/skills/node-scaling && npm run diagnose:json
+```
+
+### Understanding Diagnostic Output
+
+The JSON report includes:
+```json
+{
+  "status": "ok|warning|error",
+  "machine": { /* CPU, memory, OS info */ },
+  "tests": { /* unit, integration, e2e results */ },
+  "issues": [ /* problems found */ ],
+  "recommendations": [ /* suggested fixes */ ]
+}
+```
+
+### Auto-Fix Common Issues
+
+#### Issue: `no_config_dir`
+```bash
+mkdir -p ~/.config/clawdbot
+```
+
+#### Issue: `no_api_key`
+Option 1 - Set environment variable:
+```bash
+export GEMINI_API_KEY="your-key-here"
+```
+
+Option 2 - Create key file:
+```bash
+echo "your-key-here" > ~/.config/clawdbot/gemini-key.txt
+chmod 600 ~/.config/clawdbot/gemini-key.txt
+```
+
+Option 3 - Run setup wizard:
+```bash
+cd ~/clawd/skills/node-scaling && node bin/setup.js
+```
+
+#### Issue: `node_version`
+Swarm requires Node.js 18+. Update:
+```bash
+# Using nvm
+nvm install 20
+nvm use 20
+
+# Or direct install
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+#### Issue: `test_failure` (unit/integration)
+These indicate a bug or corrupted install. Try:
+```bash
+cd ~/clawd/skills/node-scaling
+rm -rf node_modules
+npm install
+npm run test:unit
+npm run test:integration
+```
+
+If still failing, check specific test output for details.
+
+#### Issue: `test_failure` (e2e)
+E2E failures usually mean:
+1. API key is invalid → Re-run setup with new key
+2. Rate limited → Wait a few minutes, try again
+3. Network issue → Check internet connectivity
+
+### Machine-Specific Optimization
+
+After running diagnostics, check the machine profile:
+```bash
+cat ~/.config/clawdbot/swarm-profile.json
+```
+
+Use the `recommendations.optimalWorkers` value:
+```bash
+# Update config with optimal worker count
+OPTIMAL=$(cat ~/.config/clawdbot/swarm-profile.json | jq '.recommendations.optimalWorkers // 10')
+sed -i "s/max_nodes: .*/max_nodes: $OPTIMAL/" ~/.config/clawdbot/node-scaling.yaml
+```
+
+### Low Memory Systems
+
+If `memory.freeGb` < 2:
 ```yaml
+# In node-scaling.yaml, reduce workers
 limits:
-  max_nodes: 20  # Increase this
+  max_nodes: 3
+  max_concurrent_api: 3
 ```
 
-### Slow performance
-1. Check network connectivity
-2. Try a different provider (Groq is fastest)
-3. Reduce max_concurrent_api if hitting rate limits
+### Docker/Container Environments
+
+Ensure container has sufficient resources:
+```bash
+# Check limits
+docker stats --no-stream
+
+# Recommended minimums
+# Memory: 512MB per worker
+# CPU: 0.5 cores per worker
+```
+
+### Rate Limiting
+
+If hitting API rate limits:
+```yaml
+# In node-scaling.yaml
+limits:
+  max_concurrent_api: 5  # Reduce this
+```
+
+### Complete Reinstall
+
+Nuclear option if nothing else works:
+```bash
+cd ~/clawd/skills/node-scaling
+rm -rf node_modules
+rm ~/.config/clawdbot/node-scaling.yaml
+rm ~/.config/clawdbot/gemini-key.txt
+npm install
+node bin/setup.js
+```
 
 ## Example Prompts That Trigger Node Scaling
 

@@ -1,34 +1,10 @@
-# 🚀 Node Scaling for Clawdbot
+# 🐝 Swarm - Parallel Task Execution for Clawdbot
 
-**Unlock parallel task execution with dynamic worker nodes.**
+**Turn sequential tasks into parallel operations. Same cost, dramatically faster.**
 
-Turn a 3-minute research task into a 9-second operation. Same cost, dramatically faster.
+## What is Swarm?
 
-[![Average Speedup](https://img.shields.io/badge/Avg%20Speedup-6.8x-brightgreen)](./BENCHMARK-REPORT.md)
-[![Best Speedup](https://img.shields.io/badge/Best%20Speedup-18.2x-blue)](./BENCHMARK-REPORT.md)
-[![Cost](https://img.shields.io/badge/Extra%20Cost-$0-green)](./BENCHMARK-REPORT.md)
-
-## What is This?
-
-**Swarm** adds parallel processing capabilities to Clawdbot by spinning up lightweight LLM worker nodes. Instead of processing tasks sequentially, it distributes work across multiple workers running cheap models like Gemini Flash.
-
-### 🆕 Code Swarm (v0.2.0)
-Generate code in parallel! The orchestrator plans, workers generate discrete functions simultaneously:
-
-```javascript
-const { CodeSwarm } = require('@clawdbot/node-scaling');
-const swarm = new CodeSwarm();
-
-// Generate 5 utility functions in parallel
-const functions = await swarm.generateFunctions([
-  { name: 'formatDate', description: 'Format Date to YYYY-MM-DD' },
-  { name: 'slugify', description: 'Convert string to URL slug' },
-  { name: 'debounce', description: 'Debounce a function' },
-  { name: 'deepClone', description: 'Deep clone an object' },
-  { name: 'randomId', description: 'Generate random ID' },
-]);
-// ⏱️ 1.7s parallel vs ~6s sequential = 3.5x faster!
-```
+Swarm adds parallel processing capabilities to Clawdbot by spinning up lightweight LLM worker nodes. Instead of processing tasks sequentially, it distributes work across multiple workers running cheap models like Gemini Flash.
 
 ```
 ┌────────────────────────────────────────────────────┐
@@ -45,54 +21,76 @@ const functions = await swarm.generateFunctions([
 └───────┘        └───────┘        └───────┘
 ```
 
+### Example Speedups
+
+| Task | Sequential | Parallel | Speedup |
+|------|------------|----------|---------|
+| 5 web searches | ~6s | ~1.6s | **3.8x** |
+| 10 summaries | ~8s | ~1s | **8x** |
+| Research 5 companies | ~18s | ~6s | **3x** |
+
 ## Quick Start
 
-### One-Line Install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/clawdbot/node-scaling/main/install.sh | bash
-```
-
-### Or Ask Clawdbot
-
-```
-"Install the node-scaling skill"
-```
-
-### Manual Install
+### Installation
 
 ```bash
 cd ~/clawd/skills
 git clone https://github.com/Chair4ce/node-scaling.git
 cd node-scaling
 npm install
-node bin/setup.js
+npm run setup
 ```
 
-## Benchmark Results
+Setup will:
+1. Configure your LLM provider (Gemini recommended)
+2. Run diagnostics to verify everything works
+3. Generate optimal settings for your machine
 
-| Task | Sequential | Parallel | Speedup |
-|------|------------|----------|---------|
-| 5 web searches | 6.2s | 1.6s | **3.8x** |
-| 10 summaries | 7.4s | 0.9s | **8.0x** |
-| 5 company research | 17.9s | 6.0s | **3.0x** |
-| 10 tech analyses | 166s | 9.2s | **18.2x** 🏆 |
-| 15-subject research | 49s | 6.4s | **7.7x** |
+### Verify Installation
 
-See [BENCHMARK-REPORT.md](./BENCHMARK-REPORT.md) for full results.
+```bash
+npm run diagnose
+```
+
+## Usage
+
+Ask Clawdbot:
+
+```
+"Research the top 5 AI companies and compare their products"
+```
+
+Swarm automatically kicks in for parallelizable tasks:
+
+```
+🐝 Swarm initializing...
+   3 phase(s), up to 10 workers
+
+   Phase 1: Search (5 tasks)
+   ├─ Worker 1: OpenAI...
+   ├─ Worker 2: Anthropic...
+   ├─ Worker 3: Google...
+   ├─ Worker 4: Meta...
+   ├─ Worker 5: Microsoft...
+
+🐝 Swarm complete ✓
+   15/15 tasks (100% success)
+   6.2s total
+   ⚡ 4.1x faster than sequential
+```
 
 ## Supported Providers
 
 | Provider | Model | Cost/1M tokens | Notes |
 |----------|-------|----------------|-------|
-| **Google Gemini** | gemini-2.0-flash | $0.075 | Recommended - cheapest |
-| **Groq** | llama-3.1-70b | Free tier! | Fastest inference |
-| **OpenAI** | gpt-4o-mini | $0.15 | Good quality |
-| **Anthropic** | claude-3-haiku | $0.25 | Reliable |
+| **Google Gemini** | gemini-2.0-flash | $0.075 | Recommended |
+| **Groq** | llama-3.1-70b | Free tier | Fastest |
+| **OpenAI** | gpt-4o-mini | $0.15 | Reliable |
+| **Anthropic** | claude-3-haiku | $0.25 | Quality |
 
 ## Configuration
 
-After setup, config is stored at `~/.config/clawdbot/node-scaling.yaml`:
+Config location: `~/.config/clawdbot/node-scaling.yaml`
 
 ```yaml
 node_scaling:
@@ -103,47 +101,35 @@ node_scaling:
     max_concurrent_api: 5
     
   provider:
-    name: gemini               # Your chosen provider
+    name: gemini
     model: gemini-2.0-flash
     api_key_env: GEMINI_API_KEY
-    
-  cost:
-    max_daily_spend: 5.00      # Optional spending cap
 ```
 
-## How It Works
+## Commands
 
-1. **Task Detection**: Clawdbot identifies parallelizable subtasks
-2. **Distribution**: Dispatcher assigns tasks to available worker nodes
-3. **Parallel Execution**: Workers process tasks simultaneously using cheap LLMs
-4. **Aggregation**: Results collected and synthesized by the coordinator
-5. **Node Recycling**: Workers are reused across phases
-
-### User Feedback
-Swarm announces when it's working so you know it's speeding things up:
-```
-🐝 INITIALIZING SWARM... (3 phases, up to 10 workers)
-   [searching in parallel...]
-   [fetching in parallel...]
-   [analyzing in parallel...]
-🐝 SWARM COMPLETE ✓ 15/15 tasks in 6.4s
+```bash
+npm run setup          # Interactive setup + tests
+npm run diagnose       # Health check
+npm run diagnose:json  # Machine-readable diagnostics
+npm test               # Run all tests
 ```
 
-## Example Usage
+## Troubleshooting
 
-Ask Clawdbot:
-
+Run diagnostics first:
+```bash
+npm run diagnose
 ```
-"Research the top 5 AI companies and compare their products"
-```
 
-Behind the scenes:
-- 5 parallel web searches (1.6s instead of 6s)
-- 5 parallel content fetches (0.5s instead of 2s)  
-- 5 parallel analyses (3s instead of 15s)
-- 1 synthesis step
+Common issues:
 
-**Total: 6 seconds instead of 24 seconds = 4x faster**
+| Issue | Fix |
+|-------|-----|
+| No API key | Run `npm run setup` or set `GEMINI_API_KEY` |
+| Rate limited | Reduce `max_concurrent_api` in config |
+| Out of memory | Reduce `max_nodes` in config |
+| Tests failing | Run `npm test` for details |
 
 ## Requirements
 
@@ -151,40 +137,22 @@ Behind the scenes:
 - Clawdbot installed
 - API key from supported provider
 
-## API Key Setup
+## API Keys
 
-### Google Gemini (Recommended)
+**Google Gemini (Recommended)**
 1. Go to https://aistudio.google.com/apikey
 2. Create API key
-3. Set environment variable: `export GEMINI_API_KEY=your-key`
+3. Set: `export GEMINI_API_KEY=your-key`
 
-### Groq (Free Tier)
+**Groq (Free Tier)**
 1. Go to https://console.groq.com/keys
 2. Create API key
 3. Set: `export GROQ_API_KEY=your-key`
 
-## Troubleshooting
-
-**"No configuration found"**
-```bash
-cd ~/clawd/skills/node-scaling && node bin/setup.js
-```
-
-**"API rate limit"**
-- Reduce `max_concurrent_api` in config
-- Switch to a provider with higher limits
-
-**"Out of memory"**
-- Reduce `max_nodes` in config
-
-## Contributing
-
-PRs welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
 ## License
 
-MIT - See [LICENSE](./LICENSE)
+MIT
 
 ---
 
-Built with 🤖 by [Clawdbot](https://github.com/clawdbot/clawdbot)
+Part of the [Clawdbot](https://github.com/clawdbot/clawdbot) ecosystem

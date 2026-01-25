@@ -1,7 +1,40 @@
+# Dependencies
 node_modules/
+
+# Logs
 *.log
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Local config overrides
 *.local.*
+*.local
+
+# Benchmark results (generated)
+*-results.json
 benchmark-report-*.json
-# Don't commit API keys
+
+# API keys - never commit
 *-key.txt
+*.key
+
+# Machine-specific profiles
+swarm-profile.json
+
+# Internal/marketing files (don't commit)
+SOCIAL-MEDIA-POSTS.md
+PACKAGING.md
+marketing-*.js
+capture-screenshots.js
+
+# Test artifacts
+sample-generated-*.js
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -9,7 +9,12 @@
   },
   "scripts": {
     "setup": "node bin/setup.js",
-    "test": "node test-tools.js",
+    "diagnose": "node bin/diagnose.js",
+    "diagnose:json": "node bin/diagnose.js --json",
+    "test": "node test/run-all.js",
+    "test:unit": "node test/unit.test.js",
+    "test:integration": "node test/integration.test.js",
+    "test:e2e": "node test/e2e.test.js",
     "benchmark": "node comprehensive-benchmark.js",
     "benchmark:simple": "node test-scaling.js"
   },
