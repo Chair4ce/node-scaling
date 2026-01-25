@@ -1,0 +1,58 @@
+{
+  "date": "2026-01-25T20:56:41.089Z",
+  "results": [
+    {
+      "name": "AI Tools Comparison",
+      "emoji": "🤖",
+      "subjects": 5,
+      "swarmTime": 8243,
+      "estimatedSeqTime": 18295,
+      "speedup": 2.22
+    },
+    {
+      "name": "Tech Job Market",
+      "emoji": "💼",
+      "subjects": 6,
+      "swarmTime": 8156,
+      "estimatedSeqTime": 13674,
+      "speedup": 1.68
+    },
+    {
+      "name": "Cloud Providers",
+      "emoji": "☁️",
+      "subjects": 5,
+      "swarmTime": 4556,
+      "estimatedSeqTime": 9915,
+      "speedup": 2.18
+    },
+    {
+      "name": "Programming Languages",
+      "emoji": "💻",
+      "subjects": 5,
+      "swarmTime": 5729,
+      "estimatedSeqTime": 9905,
+      "speedup": 1.73
+    },
+    {
+      "name": "Investment Research",
+      "emoji": "📈",
+      "subjects": 5,
+      "swarmTime": 5628,
+      "estimatedSeqTime": 6580,
+      "speedup": 1.17
+    },
+    {
+      "name": "Startup Analysis",
+      "emoji": "🚀",
+      "subjects": 6,
+      "swarmTime": 4533,
+      "estimatedSeqTime": 8964,
+      "speedup": 1.98
+    }
+  ],
+  "summary": {
+    "avgSpeedup": "1.8",
+    "totalTasks": 6,
+    "totalSubjects": 32
+  }
+}
