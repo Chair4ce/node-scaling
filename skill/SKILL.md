@@ -2,6 +2,29 @@
 
 Enable parallel task execution using lightweight LLM worker nodes. This dramatically speeds up research, batch processing, and multi-step tasks.
 
+## ⚡ Critical: Immediate Acknowledgment Pattern
+
+When using Swarm, **ALWAYS output an acknowledgment message BEFORE calling exec**:
+
+```
+🐝 **Swarm initializing...** researching 6 companies in parallel
+```
+
+Then call exec. This ensures the user sees feedback instantly and knows Swarm is accelerating your work, not causing delays.
+
+**DO:**
+```
+Me: "🐝 Swarm initializing... researching 6 AI startups in parallel"
+[exec call]
+Me: "Here are the results..."
+```
+
+**DON'T:**
+```
+[exec call with no prior message]  ← User sees nothing, thinks you froze
+Me: "Here are the results..."
+```
+
 ## When to Use
 
 Activate node scaling when:
