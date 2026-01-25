@@ -4,7 +4,8 @@
   "description": "Dynamic node scaling for parallel task execution in Clawdbot",
   "main": "lib/index.js",
   "bin": {
-    "node-scaling-setup": "./bin/setup.js"
+    "node-scaling-setup": "./bin/setup.js",
+    "swarm-stats": "./bin/swarm-stats.js"
   },
   "scripts": {
     "setup": "node bin/setup.js",
