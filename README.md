@@ -45,7 +45,7 @@ curl -fsSL https://raw.githubusercontent.com/clawdbot/node-scaling/main/install.
 
 ```bash
 cd ~/clawd/skills
-git clone https://github.com/clawdbot/node-scaling.git
+git clone https://github.com/Chair4ce/node-scaling.git
 cd node-scaling
 npm install
 node bin/setup.js

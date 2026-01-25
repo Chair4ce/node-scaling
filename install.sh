@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Node Scaling Installer for Clawdbot
-# https://github.com/clawdbot/node-scaling
+# https://github.com/Chair4ce/node-scaling
 #
 # Usage: curl -fsSL https://raw.githubusercontent.com/clawdbot/node-scaling/main/install.sh | bash
 #
@@ -51,7 +51,7 @@ if [ -d "$SKILL_DIR" ]; then
 else
     echo "Cloning repository..."
     mkdir -p "$CLAWDBOT_HOME/skills"
-    git clone --quiet https://github.com/clawdbot/node-scaling.git "$SKILL_DIR"
+    git clone --quiet https://github.com/Chair4ce/node-scaling.git "$SKILL_DIR"
     echo -e "${GREEN}✓ Cloned${NC}"
 fi
 
