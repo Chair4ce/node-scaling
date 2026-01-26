@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.1] - 2026-01-26
+
+### Added
+- **Security Module** - Protection against prompt injection and credential exfiltration
+  - All worker system prompts wrapped with security policy
+  - Input scanning for injection attempts
+  - Output sanitization to redact accidental credential exposure
+  - Detection patterns for: instruction overrides, fake system prompts, exfiltration attempts
+- **6 new security unit tests**
+
+### Security
+- Workers now refuse to output API keys, tokens, or credentials
+- External content treated as DATA, not instructions
+- Injection attempts like "ignore all previous instructions" are logged and ignored
+- Credentials patterns (Google, OpenAI, Anthropic, GitHub, Slack) auto-redacted from output
+
 ## [0.2.0] - 2026-01-25
 
 ### Added

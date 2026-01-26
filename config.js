@@ -63,6 +63,9 @@ function getApiKey(provider = 'gemini') {
 // Load user config or use defaults
 const userConfig = loadUserConfig();
 
+// Security policy for all workers
+const { securePrompt } = require('./lib/security');
+
 module.exports = {
   // Provider settings (from user config or defaults)
   provider: {
@@ -88,31 +91,32 @@ module.exports = {
   },
 
   // Node specializations and their tools
+  // All system prompts are wrapped with security policy
   nodeTypes: {
     search: {
       description: 'Web search specialist - finds relevant sources',
       tools: ['web_search'],
-      systemPrompt: 'You are a search specialist. Find the most relevant and authoritative sources for the query. Return structured search results.',
+      systemPrompt: securePrompt('You are a search specialist. Find the most relevant and authoritative sources for the query. Return structured search results.'),
     },
     fetch: {
       description: 'Content fetcher - extracts readable content from URLs',
       tools: ['web_fetch'],
-      systemPrompt: 'You are a content extraction specialist. Extract and clean the main content from web pages.',
+      systemPrompt: securePrompt('You are a content extraction specialist. Extract and clean the main content from web pages.'),
     },
     analyze: {
       description: 'Content analyzer - summarizes and extracts insights',
       tools: ['analyze'],
-      systemPrompt: 'You are an analysis specialist. Summarize content, identify key points, and extract actionable insights. Be concise but thorough.',
+      systemPrompt: securePrompt('You are an analysis specialist. Summarize content, identify key points, and extract actionable insights. Be concise but thorough.'),
     },
     extract: {
       description: 'Data extractor - pulls structured data from text',
       tools: ['extract'],
-      systemPrompt: 'You are a data extraction specialist. Extract structured data, facts, figures, and entities from text.',
+      systemPrompt: securePrompt('You are a data extraction specialist. Extract structured data, facts, figures, and entities from text.'),
     },
     synthesize: {
       description: 'Synthesizer - combines multiple sources into coherent output',
       tools: ['synthesize'],
-      systemPrompt: 'You are a synthesis specialist. Combine multiple pieces of information into a coherent, well-organized report.',
+      systemPrompt: securePrompt('You are a synthesis specialist. Combine multiple pieces of information into a coherent, well-organized report.'),
     },
   },
   
