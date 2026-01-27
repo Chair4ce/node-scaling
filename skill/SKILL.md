@@ -2,6 +2,8 @@
 
 Enable parallel task execution using lightweight LLM worker nodes. This dramatically speeds up research, batch processing, and multi-step tasks.
 
+> **First time?** After installation, read `INSTALL.md` for workspace integration recommendations (AGENTS.md + TOOLS.md). These help you automatically recognize when to use Swarm.
+
 ## ⚡ Critical: Immediate Acknowledgment Pattern
 
 When using Swarm, **ALWAYS output an acknowledgment message BEFORE calling exec**:

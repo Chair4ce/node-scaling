@@ -87,3 +87,36 @@ node bin/setup.js
 echo ""
 echo -e "${GREEN}✅ Installation complete!${NC}"
 echo ""
+
+# Display post-install recommendations
+INSTALL_MD="$SKILL_DIR/INSTALL.md"
+if [ -f "$INSTALL_MD" ]; then
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}📋 RECOMMENDED: Workspace Integration${NC}"
+    echo ""
+    echo "Swarm works best when integrated into your agent's workflow."
+    echo ""
+    echo -e "Read the full guide: ${BLUE}$INSTALL_MD${NC}"
+    echo ""
+    echo "Quick summary:"
+    echo "  • Add rules to AGENTS.md → Agent auto-detects parallel tasks"
+    echo "  • Add notes to TOOLS.md  → Quick reference for your setup"
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    # If running interactively, offer to show the file
+    if [ -t 0 ]; then
+        read -p "View integration guide now? [Y/n]: " VIEW_GUIDE
+        if [[ ! "$VIEW_GUIDE" =~ ^[Nn]$ ]]; then
+            echo ""
+            cat "$INSTALL_MD"
+            echo ""
+        fi
+    fi
+fi
+
+echo "Try asking your agent:"
+echo '  "Research the top 5 AI companies and compare them"'
+echo ""
