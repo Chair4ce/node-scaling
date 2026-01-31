@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.1] - 2026-01-31
+
+### Added
+- **SKILL.md** - Agent-facing documentation for Clawdbot skill system integration
+  - Mandatory usage triggers for parallel work
+  - Quick reference commands
+  - Survival math: 200x cost savings vs Opus
+
+### Changed
+- Updated benchmarks with verified numbers across multiple batch sizes
+- README now shows accurate throughput range (14-35 tasks/sec)
+
+### Performance (verified)
+- **10 tasks**: ~700ms (14 tasks/sec)
+- **30 tasks**: ~1,000ms (30 tasks/sec)
+- **50 tasks**: ~1,450ms (35 tasks/sec)
+- Larger batches yield higher throughput (amortizes connection overhead)
+
 ## [0.3.0] - 2026-01-31
 
 ### Added
@@ -10,17 +28,15 @@
   - `swarm bench --tasks N` - Benchmark throughput
   - `swarm logs [N]` - View daemon logs
   - Auto-detects and uses daemon if running, falls back to direct execution
+- **Rate limit tuning** - Increased limits for higher throughput
+  - `max_concurrent_api`: 10 → 20
+  - `max_nodes`: 16 → 20
+  - Rate limiter: 60 → 120 burst
 
 ### Changed
 - Daemon now spawns in background by default (no terminal lock)
 - Improved NDJSON streaming in CLI client
 - Better error handling and progress display
-
-### Performance
-- **10 tasks**: ~580ms (17 tasks/sec)
-- **30 tasks**: ~1,000ms (29 tasks/sec)
-- Sequential equivalent for 30 tasks: ~15+ seconds
-- **Speedup**: Up to 15x vs sequential
 
 ## [0.2.1] - 2026-01-26
 
