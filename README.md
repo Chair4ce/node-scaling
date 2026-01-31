@@ -28,10 +28,11 @@ Swarm adds parallel processing capabilities to Clawdbot by spinning up lightweig
 
 | Tasks | Sequential | With Daemon | Speedup |
 |-------|------------|-------------|---------|
-| 10 | ~5s | 580ms | **~9x** |
-| 30 | ~15s | 1,000ms | **~15x** |
+| 10 | ~5s | ~700ms | **~7x** |
+| 30 | ~15s | ~1,000ms | **~15x** |
+| 50 | ~25s | ~1,450ms | **~17x** |
 
-**Throughput:** Up to 29 tasks/second with warm daemon.
+**Throughput:** 14-35 tasks/second depending on batch size (larger batches = higher throughput).
 
 ## Quick Start
 
@@ -76,17 +77,17 @@ $ swarm start
    Workers: 6
    PID: 12345
 
-$ swarm bench --tasks 10
-⚡ Benchmark: 10 parallel tasks
+$ swarm bench --tasks 30
+⚡ Benchmark: 30 parallel tasks
 
 🐝 Using daemon (port 9999)
-   Processing.......... done!
+   Processing.............................. done!
 
-⏱️  563ms | ✅ 10/10
+⏱️  1000ms | ✅ 30/30
 
-📈 Total time: 582ms
-   Per task:   58ms
-   Throughput: 17.2 tasks/sec
+📈 Total time: 1018ms
+   Per task:   34ms
+   Throughput: 29.5 tasks/sec
 
 $ swarm status
 🐝 Swarm Daemon Status
