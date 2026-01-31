@@ -1,6 +1,6 @@
 {
   "name": "@clawdbot/node-scaling",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Dynamic node scaling for parallel task execution in Clawdbot",
   "main": "lib/index.js",
   "bin": {
@@ -41,6 +41,8 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.93.3",
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {

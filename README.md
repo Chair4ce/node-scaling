@@ -1,6 +1,6 @@
 # 🐝 Swarm - Parallel Task Execution for Clawdbot
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](./CHANGELOG.md)
 [![Tests](https://img.shields.io/badge/tests-24%20passing-green.svg)](./test)
 
 **Turn sequential tasks into parallel operations. Same cost, dramatically faster.**
@@ -19,18 +19,19 @@ Swarm adds parallel processing capabilities to Clawdbot by spinning up lightweig
     │                 │                 │
 ┌───▼───┐        ┌───▼───┐        ┌───▼───┐
 │Search │        │ Fetch │        │Analyze│
-│Workers│        │Workers│        │Workers│
-│(Flash)│        │(Flash)│        │(Flash)│
+│Workers│        │(Flash)│        │Workers│
+│(Flash)│        │       │        │(Flash)│
 └───────┘        └───────┘        └───────┘
 ```
 
-### Example Speedups
+### Performance
 
-| Task | Sequential | Parallel | Speedup |
-|------|------------|----------|---------|
-| 5 web searches | ~6s | ~1.6s | **3.8x** |
-| 10 summaries | ~8s | ~1s | **8x** |
-| Research 5 companies | ~18s | ~6s | **3x** |
+| Tasks | Sequential | With Daemon | Speedup |
+|-------|------------|-------------|---------|
+| 10 | ~5s | 580ms | **~9x** |
+| 30 | ~15s | 1,000ms | **~15x** |
+
+**Throughput:** Up to 29 tasks/second with warm daemon.
 
 ## Quick Start
 
@@ -44,20 +45,64 @@ npm install
 npm run setup
 ```
 
-Setup will:
-1. Configure your LLM provider (Gemini recommended)
-2. Run diagnostics to verify everything works
-3. Generate optimal settings for your machine
+### CLI
 
-### Verify Installation
+The unified `swarm` CLI handles both daemon management and task execution:
 
 ```bash
-npm run diagnose
+# Daemon management
+swarm start              # Start daemon (background, warm workers)
+swarm stop               # Stop daemon
+swarm status             # Show status
+swarm restart            # Restart daemon
+swarm logs [N]           # Show last N lines of log
+
+# Task execution (auto-uses daemon if running)
+swarm parallel "prompt1" "prompt2" "prompt3"
+swarm research OpenAI Anthropic --topic "AI safety"
+swarm bench --tasks 30   # Benchmark
+
+# Options
+swarm start --port 9999 --workers 6
 ```
 
-## Usage
+### Example Session
 
-Ask Clawdbot:
+```bash
+$ swarm start
+🐝 Starting Swarm Daemon...
+   Waiting for startup...
+✅ Daemon ready on port 9999
+   Workers: 6
+   PID: 12345
+
+$ swarm bench --tasks 10
+⚡ Benchmark: 10 parallel tasks
+
+🐝 Using daemon (port 9999)
+   Processing.......... done!
+
+⏱️  563ms | ✅ 10/10
+
+📈 Total time: 582ms
+   Per task:   58ms
+   Throughput: 17.2 tasks/sec
+
+$ swarm status
+🐝 Swarm Daemon Status
+─────────────────────────────────────────────
+   Status:     ✅ Running
+   Port:       9999
+   Workers:    16
+   Requests:   1
+   Tasks:      10
+   Avg time:   563ms
+   Provider:   gemini
+```
+
+## Usage in Clawdbot
+
+Ask Clawdbot to do parallel work:
 
 ```
 "Research the top 5 AI companies and compare their products"
@@ -82,6 +127,51 @@ Swarm automatically kicks in for parallelizable tasks:
    ⚡ 4.1x faster than sequential
 ```
 
+## JavaScript API
+
+```javascript
+const { parallel, research } = require('~/clawd/skills/node-scaling/lib');
+
+// Run prompts in parallel
+const result = await parallel([
+  'What is OpenAI?',
+  'What is Anthropic?',
+  'What is Google DeepMind?'
+]);
+console.log(result.results); // Array of responses
+console.log(result.stats);   // { totalDuration, successful, failed }
+
+// Multi-phase research (search → fetch → analyze)
+const result = await research(
+  ['OpenAI', 'Anthropic', 'Mistral'],
+  'AI products and pricing'
+);
+```
+
+## Daemon HTTP API
+
+When the daemon is running, you can also use HTTP:
+
+```bash
+# Health check
+curl http://localhost:9999/health
+
+# Status
+curl http://localhost:9999/status
+
+# Parallel execution
+curl -X POST http://localhost:9999/parallel \
+  -H "Content-Type: application/json" \
+  -d '{"prompts": ["What is AI?", "What is ML?"]}'
+
+# Research
+curl -X POST http://localhost:9999/research \
+  -H "Content-Type: application/json" \
+  -d '{"subjects": ["OpenAI", "Anthropic"], "topic": "AI safety"}'
+```
+
+Responses are streamed as NDJSON for real-time progress.
+
 ## Supported Providers
 
 | Provider | Model | Cost/1M tokens | Notes |
@@ -100,43 +190,17 @@ node_scaling:
   enabled: true
   
   limits:
-    max_nodes: 10              # Adjust based on your system
-    max_concurrent_api: 5
+    max_nodes: 16              # Adjust based on your system
+    max_concurrent_api: 16
     
   provider:
     name: gemini
     model: gemini-2.0-flash
     api_key_env: GEMINI_API_KEY
+    
+  cost:
+    max_daily_spend: 10.00     # Optional daily cap
 ```
-
-## Commands
-
-```bash
-npm run setup          # Interactive setup + tests
-npm run diagnose       # Health check
-npm run diagnose:json  # Machine-readable diagnostics
-npm test               # Run all tests
-```
-
-## Daemon Mode (Fastest)
-
-For instant response times, run the Swarm daemon:
-
-```bash
-# Start daemon (keeps workers warm)
-swarm-daemon start
-
-# Check status
-swarm-daemon status
-
-# Make requests (instant TTFT)
-swarm research OpenAI Anthropic Mistral --topic "AI 2024"
-```
-
-**Performance with daemon:**
-- Time to first token: <10ms
-- Workers pre-warmed and ready
-- API connections pooled
 
 ## Troubleshooting
 
@@ -152,7 +216,7 @@ Common issues:
 | No API key | Run `npm run setup` or set `GEMINI_API_KEY` |
 | Rate limited | Reduce `max_concurrent_api` in config |
 | Out of memory | Reduce `max_nodes` in config |
-| Tests failing | Run `npm test` for details |
+| Daemon won't start | Check `swarm logs` for errors |
 
 ## Requirements
 

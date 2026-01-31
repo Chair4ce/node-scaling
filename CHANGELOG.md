@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.0] - 2026-01-31
+
+### Added
+- **Unified `swarm` CLI** - Single command for daemon management and task execution
+  - `swarm start/stop/status/restart` - Daemon lifecycle
+  - `swarm parallel "p1" "p2"` - Run prompts in parallel
+  - `swarm research "s1" "s2" --topic "x"` - Multi-phase research
+  - `swarm bench --tasks N` - Benchmark throughput
+  - `swarm logs [N]` - View daemon logs
+  - Auto-detects and uses daemon if running, falls back to direct execution
+
+### Changed
+- Daemon now spawns in background by default (no terminal lock)
+- Improved NDJSON streaming in CLI client
+- Better error handling and progress display
+
+### Performance
+- **10 tasks**: ~580ms (17 tasks/sec)
+- **30 tasks**: ~1,000ms (29 tasks/sec)
+- Sequential equivalent for 30 tasks: ~15+ seconds
+- **Speedup**: Up to 15x vs sequential
+
 ## [0.2.1] - 2026-01-26
 
 ### Added
