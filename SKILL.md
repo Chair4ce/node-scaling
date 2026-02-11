@@ -11,6 +11,16 @@ metadata:
       env:
         - GEMINI_API_KEY
     primaryEnv: GEMINI_API_KEY
+    install:
+      - id: git-clone
+        kind: download
+        url: https://github.com/Chair4ce/node-scaling/archive/refs/heads/main.zip
+        archive: zip
+        extract: true
+        stripComponents: 1
+        targetDir: ~/.openclaw/skills/node-scaling
+        label: "Download from GitHub"
+        postInstall: "cd ~/.openclaw/skills/node-scaling && npm install"
 ---
 
 # Swarm
