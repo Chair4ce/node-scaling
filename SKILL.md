@@ -1,7 +1,10 @@
 ---
 name: swarm
+version: 1.0.0
 description: Parallel task execution using Gemini Flash workers. 200x cheaper than Opus. Use for any parallelizable work to preserve quota.
 homepage: https://github.com/Chair4ce/node-scaling
+license: MIT
+author: Chair4ce
 metadata:
   openclaw:
     emoji: "🐝"
@@ -12,15 +15,15 @@ metadata:
         - GEMINI_API_KEY
     primaryEnv: GEMINI_API_KEY
     install:
-      - id: git-clone
+      - id: release-download
         kind: download
-        url: https://github.com/Chair4ce/node-scaling/archive/refs/heads/main.zip
+        url: https://github.com/Chair4ce/node-scaling/archive/refs/tags/v1.0.0.zip
         archive: zip
         extract: true
         stripComponents: 1
         targetDir: ~/.openclaw/skills/node-scaling
-        label: "Download from GitHub"
-        postInstall: "cd ~/.openclaw/skills/node-scaling && npm install"
+        label: "Download v1.0.0 from GitHub"
+        postInstall: "cd ~/.openclaw/skills/node-scaling && npm install --production"
 ---
 
 # Swarm
