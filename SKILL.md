@@ -43,7 +43,30 @@ Setup will prompt for your API key (Gemini recommended).
 
 Same results. One keeps you alive longer.
 
-## When to Use (MANDATORY)
+## 🔥 Monster Benchmark (6-Node Fleet)
+
+Real-world benchmark across 6 distributed nodes (Mac mini + 5 Linux servers):
+
+| Node | Tasks | Time | Throughput |
+|------|-------|------|------------|
+| Mac mini | 100 | 3.76s | 26.6/sec |
+| openclaw-2 | 100 | 3.20s | 31.3/sec |
+| openclaw-3 | 100 | 3.23s | 31.0/sec |
+| openclaw-5 | 100 | 3.27s | 30.6/sec |
+| openclaw-6 | 100 | 3.21s | 31.2/sec |
+| openclaw-7 | 100 | 3.32s | 30.2/sec |
+
+**Results:**
+- **600 LLM tasks** completed in **3.8 seconds**
+- **Combined throughput:** 181 tasks/sec
+- **Estimated cost:** ~$0.045
+
+**Comparison:**
+- 600 tasks on Opus sequentially: ~10 minutes, ~$9
+- 600 tasks on Swarm fleet: 3.8 seconds, $0.045
+- **157x faster, 200x cheaper**
+
+## When to Use
 
 Trigger swarm when you see **ANY** of these:
 - **3+ independent tasks** (research, summaries, comparisons)
@@ -55,10 +78,10 @@ Trigger swarm when you see **ANY** of these:
 ## Quick Reference
 
 ```bash
-# Check daemon (do this every session)
+# Check daemon status
 swarm status
 
-# Start if not running
+# Start daemon
 swarm start
 
 # Parallel prompts
@@ -71,9 +94,9 @@ swarm research "OpenAI" "Anthropic" "Mistral" --topic "AI safety"
 swarm bench --tasks 30
 ```
 
-## Performance
+## Single-Node Performance
 
-With daemon running:
+With daemon running (3 workers):
 
 | Tasks | Time | Throughput |
 |-------|------|------------|
@@ -81,7 +104,23 @@ With daemon running:
 | 30 | ~1,000ms | 30 tasks/sec |
 | 50 | ~1,450ms | 35 tasks/sec |
 
-Larger batches = higher throughput.
+Larger batches = higher throughput (amortizes connection overhead).
+
+## Multi-Node Scaling
+
+Deploy swarm on multiple machines and run benchmarks in parallel:
+
+```bash
+# On each node
+git clone https://github.com/Chair4ce/node-scaling.git
+cd node-scaling && npm install && npm run setup
+swarm start
+
+# Run distributed benchmark
+swarm bench --tasks 100
+```
+
+Each node adds ~30 tasks/sec to your combined throughput.
 
 ## Configuration
 
