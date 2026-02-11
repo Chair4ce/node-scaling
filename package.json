@@ -1,6 +1,6 @@
 {
   "name": "@clawdbot/node-scaling",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Dynamic node scaling for parallel task execution in Clawdbot",
   "main": "lib/index.js",
   "bin": {
