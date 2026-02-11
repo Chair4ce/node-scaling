@@ -39,7 +39,7 @@ Swarm adds parallel processing capabilities to Clawdbot by spinning up lightweig
 ### Installation
 
 ```bash
-cd ~/clawd/skills
+cd ~/.openclaw/skills
 git clone https://github.com/Chair4ce/node-scaling.git
 cd node-scaling
 npm install
@@ -131,7 +131,7 @@ Swarm automatically kicks in for parallelizable tasks:
 ## JavaScript API
 
 ```javascript
-const { parallel, research } = require('~/clawd/skills/node-scaling/lib');
+const { parallel, research } = require('~/.openclaw/skills/node-scaling/lib');
 
 // Run prompts in parallel
 const result = await parallel([

@@ -32,7 +32,7 @@ Users can document their Swarm configuration in TOOLS.md for easy reference.
 ```markdown
 ## Swarm (Parallel Task Execution)
 
-**Location:** `~/clawd/skills/node-scaling/`
+**Location:** `~/.openclaw/skills/node-scaling/`
 **Config:** `~/.config/clawdbot/node-scaling.yaml`
 
 Parallel task execution using Gemini Flash workers.
@@ -62,7 +62,7 @@ Parallel task execution using Gemini Flash workers.
 After installation, verify the setup:
 
 ```bash
-cd ~/clawd/skills/node-scaling
+cd ~/.openclaw/skills/node-scaling
 npm run diagnose
 ```
 
