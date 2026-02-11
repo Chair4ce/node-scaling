@@ -92,10 +92,12 @@ async function runDeepBenchmark() {
 
   results.push({ test: 'blackboard', file: fileWrite, supabase: supaWrite });
 
-  // Cleanup Supabase test data
-  const { createClient } = require('@supabase/supabase-js');
-  const supabase = createClient('http://127.0.0.1:54421', 'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz');
-  await supabase.from('swarm_blackboard').delete().like('task_id', 'bench-%');
+  // Cleanup Supabase test data (requires SUPABASE_URL and SUPABASE_SERVICE_KEY env vars)
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    await supabase.from('swarm_blackboard').delete().like('task_id', 'bench-%');
+  }
 
   // ========================================
   // 4. AUTONOMOUS RESEARCH SCALING

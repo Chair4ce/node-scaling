@@ -5,8 +5,13 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'http://127.0.0.1:54421';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || 'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('❌ SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables required');
+  process.exit(1);
+}
 
 async function setup() {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
