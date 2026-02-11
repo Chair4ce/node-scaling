@@ -1,29 +1,34 @@
 ---
 name: swarm
-version: 1.0.3
+version: 1.0.4
 description: Parallel task execution using Gemini Flash workers. 200x cheaper than Opus. Use for any parallelizable work to preserve quota.
 homepage: https://github.com/Chair4ce/node-scaling
 license: MIT
 author: Chair4ce
 metadata:
-  openclaw:
-    emoji: "🐝"
-    requires:
-      bins:
-        - node
-      env:
-        - GEMINI_API_KEY
-    primaryEnv: GEMINI_API_KEY
-    install:
-      - id: release-download
-        kind: download
-        url: https://github.com/Chair4ce/node-scaling/archive/refs/tags/v1.0.3.zip
-        archive: zip
-        extract: true
-        stripComponents: 1
-        targetDir: ~/.openclaw/skills/node-scaling
-        label: "Download v1.0.0 from GitHub"
-        postInstall: "cd ~/.openclaw/skills/node-scaling && npm install --production"
+  {
+    "openclaw": {
+      "emoji": "🐝",
+      "requires": {
+        "bins": ["node"],
+        "env": ["GEMINI_API_KEY"]
+      },
+      "primaryEnv": "GEMINI_API_KEY",
+      "install": [
+        {
+          "id": "release-download",
+          "kind": "download",
+          "url": "https://github.com/Chair4ce/node-scaling/archive/refs/tags/v1.0.4.zip",
+          "archive": "zip",
+          "extract": true,
+          "stripComponents": 1,
+          "targetDir": "~/.openclaw/skills/node-scaling",
+          "label": "Download v1.0.4 from GitHub",
+          "postInstall": "cd ~/.openclaw/skills/node-scaling && npm install --production"
+        }
+      ]
+    }
+  }
 ---
 
 # Swarm
@@ -70,7 +75,7 @@ swarm bench --tasks 30         # Benchmark throughput
 
 ### Distributed Fleet (6 Nodes)
 
-Real benchmark across Mac mini + 5 Linux servers, all running simultaneously:
+Real benchmark across Mac mini + 5 Linux servers:
 
 | Node | Tasks | Time | Throughput |
 |------|-------|------|------------|
@@ -134,9 +139,8 @@ node_scaling:
 Deploy on additional machines for linear scaling:
 
 ```bash
-# On each node
-git clone https://github.com/Chair4ce/node-scaling.git
-cd node-scaling && npm install && npm run setup
+git clone https://github.com/Chair4ce/node-scaling.git ~/.openclaw/skills/node-scaling
+cd ~/.openclaw/skills/node-scaling && npm install && npm run setup
 swarm start
 ```
 
