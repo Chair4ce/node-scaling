@@ -1,0 +1,31 @@
+# Swarm Coordinator
+# Manages task distribution across worker nodes
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+RUN apk add --no-cache curl
+
+# Copy package files
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source
+COPY lib/ ./lib/
+COPY bin/ ./bin/
+COPY docker/coordinator/ ./coordinator/
+
+# Create data directory
+RUN mkdir -p /data
+
+# Expose ports
+EXPOSE 9900 9901
+
+# Health check endpoint
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:9900/health || exit 1
+
+# Start coordinator
+CMD ["node", "coordinator/server.js"]

@@ -1,0 +1,483 @@
+#!/usr/bin/env node
+/**
+ * Swarm CLI - Unified interface for parallel task execution
+ * 
+ * Daemon commands:
+ *   swarm daemon start [--port 9999] [--workers 6]
+ *   swarm daemon stop
+ *   swarm daemon status
+ *   swarm daemon restart
+ * 
+ * Direct commands (use daemon if running, else direct):
+ *   swarm parallel "prompt1" "prompt2" ...
+ *   swarm research "subject1" "subject2" --topic "angle"
+ *   swarm bench [--tasks N]
+ * 
+ * Quick aliases:
+ *   swarm start   → swarm daemon start
+ *   swarm stop    → swarm daemon stop
+ *   swarm status  → swarm daemon status
+ */
+
+const path = require('path');
+const fs = require('fs');
+const http = require('http');
+const os = require('os');
+const { spawn } = require('child_process');
+
+const SWARM_DIR = path.join(os.homedir(), 'clawd/skills/node-scaling');
+const PID_FILE = path.join(os.tmpdir(), 'swarm-daemon.pid');
+const LOG_FILE = path.join(os.tmpdir(), 'swarm-daemon.log');
+const DEFAULT_PORT = 9999;
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
+function getPid() {
+  try {
+    return parseInt(fs.readFileSync(PID_FILE, 'utf8').trim(), 10);
+  } catch {
+    return null;
+  }
+}
+
+function savePid(pid) {
+  fs.writeFileSync(PID_FILE, String(pid));
+}
+
+function clearPid() {
+  try { fs.unlinkSync(PID_FILE); } catch {}
+}
+
+function isRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function httpGet(port, path) {
+  return new Promise((resolve) => {
+    const req = http.request({
+      hostname: 'localhost',
+      port,
+      path,
+      method: 'GET',
+      timeout: 2000,
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.end();
+  });
+}
+
+async function httpPost(port, urlPath, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = http.request({
+      hostname: 'localhost',
+      port,
+      path: urlPath,
+      method: 'POST',
+      timeout: 120000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data),
+      },
+    }, (res) => {
+      let buffer = '';
+      let finalResult = null;
+      
+      res.on('data', chunk => {
+        buffer += chunk;
+        // Parse complete NDJSON lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep incomplete line in buffer
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const event = JSON.parse(line);
+            if (event.event === 'progress' || event.event === 'task') {
+              process.stdout.write('.');
+            } else if (event.event === 'complete') {
+              finalResult = event;
+            } else if (event.event === 'error') {
+              reject(new Error(event.error));
+            }
+          } catch {}
+        }
+      });
+      
+      res.on('end', () => {
+        // Check remaining buffer for final event
+        if (buffer.trim()) {
+          try {
+            const event = JSON.parse(buffer);
+            if (event.event === 'complete') finalResult = event;
+            if (event.event === 'error') reject(new Error(event.error));
+          } catch {}
+        }
+        resolve(finalResult);
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.write(data);
+    req.end();
+  });
+}
+
+async function isDaemonRunning(port = DEFAULT_PORT) {
+  const health = await httpGet(port, '/health');
+  return health?.status === 'ok';
+}
+
+// ─────────────────────────────────────────────────────────────
+// Daemon Commands
+// ─────────────────────────────────────────────────────────────
+
+async function daemonStart(port, workers, foreground = false) {
+  if (await isDaemonRunning(port)) {
+    const status = await httpGet(port, '/status');
+    console.log(`✅ Swarm Daemon already running on port ${port}`);
+    console.log(`   Uptime: ${Math.round(status.uptime / 1000)}s`);
+    console.log(`   Workers: ${status.workers?.totalNodes || 'unknown'}`);
+    return;
+  }
+
+  const daemonScript = path.join(SWARM_DIR, 'bin/swarm-daemon.js');
+  
+  if (foreground) {
+    // Run in foreground (for debugging)
+    require(daemonScript);
+    return;
+  }
+
+  // Spawn detached daemon
+  console.log('🐝 Starting Swarm Daemon...');
+  
+  const out = fs.openSync(LOG_FILE, 'a');
+  const err = fs.openSync(LOG_FILE, 'a');
+  
+  const child = spawn('node', [daemonScript, 'start', '--port', port, '--workers', workers], {
+    detached: true,
+    stdio: ['ignore', out, err],
+    cwd: SWARM_DIR,
+  });
+  
+  child.unref();
+  savePid(child.pid);
+  
+  // Wait for startup
+  console.log('   Waiting for startup...');
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 500));
+    if (await isDaemonRunning(port)) {
+      const status = await httpGet(port, '/status');
+      console.log(`✅ Daemon ready on port ${port}`);
+      console.log(`   Workers: ${status.workers?.totalNodes || workers}`);
+      console.log(`   PID: ${child.pid}`);
+      console.log(`   Log: ${LOG_FILE}`);
+      return;
+    }
+  }
+  
+  console.log('⚠️  Daemon may not have started. Check log:');
+  console.log(`   tail -f ${LOG_FILE}`);
+}
+
+async function daemonStop(port) {
+  const pid = getPid();
+  
+  if (pid && isRunning(pid)) {
+    console.log(`🛑 Stopping Swarm Daemon (PID ${pid})...`);
+    process.kill(pid, 'SIGTERM');
+    clearPid();
+    
+    // Wait for shutdown
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 200));
+      if (!isRunning(pid)) {
+        console.log('✅ Stopped');
+        return;
+      }
+    }
+    console.log('⚠️  Process may still be running');
+    return;
+  }
+  
+  // Check if running without PID file
+  if (await isDaemonRunning(port)) {
+    console.log(`⚠️  Daemon running on port ${port} but PID unknown`);
+    console.log(`   Find and kill manually: lsof -i :${port}`);
+    return;
+  }
+  
+  console.log('ℹ️  Daemon not running');
+}
+
+async function daemonStatus(port) {
+  console.log('🐝 Swarm Daemon Status');
+  console.log('─'.repeat(45));
+  
+  const health = await httpGet(port, '/health');
+  
+  if (!health) {
+    console.log('   Status:     ❌ Not running');
+    console.log('');
+    console.log('   Start with: swarm start');
+    return;
+  }
+  
+  const status = await httpGet(port, '/status');
+  
+  console.log('   Status:     ✅ Running');
+  console.log(`   Port:       ${port}`);
+  console.log(`   PID:        ${getPid() || 'unknown'}`);
+  console.log(`   Uptime:     ${Math.round(status.uptime / 1000)}s`);
+  console.log(`   Workers:    ${status.workers?.totalNodes || health.workers}`);
+  console.log(`   Requests:   ${status.requests}`);
+  console.log(`   Tasks:      ${status.totalTasks}`);
+  if (status.avgResponseMs > 0) {
+    console.log(`   Avg time:   ${status.avgResponseMs}ms`);
+  }
+  console.log(`   Provider:   ${status.config?.provider || 'gemini'}`);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Task Commands
+// ─────────────────────────────────────────────────────────────
+
+async function runParallel(prompts, port) {
+  const useDaemon = await isDaemonRunning(port);
+  
+  if (useDaemon) {
+    console.log(`🐝 Using daemon (port ${port})`);
+    process.stdout.write('   Processing');
+    
+    try {
+      const result = await httpPost(port, '/parallel', { prompts });
+      console.log(' done!\n');
+      
+      console.log('📊 Results:');
+      result.results.forEach((r, i) => {
+        console.log(`\n[${i + 1}] ${r ? r.trim().substring(0, 200) : '❌ FAILED'}`);
+      });
+      console.log(`\n⏱️  ${result.duration}ms | ✅ ${result.stats.successful}/${prompts.length}`);
+    } catch (e) {
+      console.log(` error: ${e.message}`);
+    }
+  } else {
+    console.log('🐝 Direct execution (no daemon)');
+    const { parallel } = require(path.join(SWARM_DIR, 'lib'));
+    const result = await parallel(prompts, { quiet: false });
+    
+    console.log('\n📊 Results:');
+    result.results.forEach((r, i) => {
+      console.log(`\n[${i + 1}] ${r ? r.trim().substring(0, 200) : '❌ FAILED'}`);
+    });
+    console.log(`\n⏱️  ${result.stats.totalDuration}ms | ✅ ${result.stats.successful}/${prompts.length}`);
+  }
+}
+
+async function runResearch(subjects, topic, port) {
+  const useDaemon = await isDaemonRunning(port);
+  
+  console.log(`🔍 Researching ${subjects.length} subjects: ${subjects.join(', ')}`);
+  console.log(`📌 Topic: ${topic}\n`);
+  
+  if (useDaemon) {
+    console.log(`🐝 Using daemon (port ${port})`);
+    process.stdout.write('   Processing');
+    
+    try {
+      const result = await httpPost(port, '/research', { subjects, topic });
+      console.log(' done!\n');
+      
+      console.log('📊 Research Results:');
+      result.analyses.forEach(a => {
+        console.log(`\n=== ${a.subject} ===`);
+        console.log(a.analysis || 'No data');
+      });
+      console.log(`\n⏱️  ${result.duration}ms`);
+    } catch (e) {
+      console.log(` error: ${e.message}`);
+    }
+  } else {
+    console.log('🐝 Direct execution (no daemon)');
+    const { research } = require(path.join(SWARM_DIR, 'lib'));
+    const result = await research(subjects, topic);
+    
+    console.log('\n📊 Research Results:');
+    result.results.forEach((r, i) => {
+      console.log(`\n=== ${subjects[i]} ===`);
+      console.log(r.synthesis || r.analysis || 'No data');
+    });
+  }
+}
+
+async function runBench(taskCount, port) {
+  const prompts = Array(taskCount).fill(null).map((_, i) => 
+    `What is ${i + 1} * ${i + 1}? Reply with just the number.`
+  );
+  
+  console.log(`⚡ Benchmark: ${taskCount} parallel tasks\n`);
+  
+  const start = Date.now();
+  await runParallel(prompts, port);
+  const total = Date.now() - start;
+  
+  console.log(`\n📈 Total time: ${total}ms`);
+  console.log(`   Per task:   ${Math.round(total / taskCount)}ms`);
+  console.log(`   Throughput: ${Math.round(taskCount / (total / 1000) * 10) / 10} tasks/sec`);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main
+// ─────────────────────────────────────────────────────────────
+
+async function main() {
+  const args = process.argv.slice(2);
+  let command = args[0] || 'help';
+  
+  // Parse global options
+  const portIdx = args.indexOf('--port');
+  const port = portIdx !== -1 ? parseInt(args[portIdx + 1], 10) : DEFAULT_PORT;
+  
+  const workersIdx = args.indexOf('--workers');
+  const workers = workersIdx !== -1 ? parseInt(args[workersIdx + 1], 10) : 6;
+
+  // Quick aliases
+  if (command === 'start') command = 'daemon-start';
+  if (command === 'stop') command = 'daemon-stop';
+  if (command === 'status') command = 'daemon-status';
+  if (command === 'restart') command = 'daemon-restart';
+
+  switch (command) {
+    case 'daemon':
+    case 'd': {
+      const subCmd = args[1] || 'status';
+      switch (subCmd) {
+        case 'start': await daemonStart(port, workers); break;
+        case 'stop': await daemonStop(port); break;
+        case 'status': await daemonStatus(port); break;
+        case 'restart':
+          await daemonStop(port);
+          await new Promise(r => setTimeout(r, 1000));
+          await daemonStart(port, workers);
+          break;
+        case 'foreground':
+        case 'fg':
+          await daemonStart(port, workers, true);
+          break;
+        default:
+          console.log('Unknown daemon command:', subCmd);
+      }
+      break;
+    }
+
+    case 'daemon-start': await daemonStart(port, workers); break;
+    case 'daemon-stop': await daemonStop(port); break;
+    case 'daemon-status': await daemonStatus(port); break;
+    case 'daemon-restart':
+      await daemonStop(port);
+      await new Promise(r => setTimeout(r, 1000));
+      await daemonStart(port, workers);
+      break;
+
+    case 'parallel':
+    case 'p': {
+      const prompts = args.slice(1).filter(a => !a.startsWith('--'));
+      if (prompts.length === 0) {
+        console.error('Usage: swarm parallel "prompt1" "prompt2" ...');
+        process.exit(1);
+      }
+      await runParallel(prompts, port);
+      break;
+    }
+
+    case 'research':
+    case 'r': {
+      const topicIdx = args.indexOf('--topic');
+      const topic = topicIdx > 0 ? args[topicIdx + 1] : 'latest news and developments';
+      const subjects = args.slice(1).filter((a, i, arr) => 
+        !a.startsWith('--') && arr[i-1] !== '--topic' && arr[i-1] !== '--port'
+      );
+      
+      if (subjects.length === 0) {
+        console.error('Usage: swarm research "subject1" "subject2" --topic "angle"');
+        process.exit(1);
+      }
+      await runResearch(subjects, topic, port);
+      break;
+    }
+
+    case 'bench':
+    case 'benchmark': {
+      const tasksIdx = args.indexOf('--tasks');
+      const taskCount = tasksIdx > 0 ? parseInt(args[tasksIdx + 1], 10) : 10;
+      await runBench(taskCount, port);
+      break;
+    }
+
+    case 'log':
+    case 'logs': {
+      const { execSync } = require('child_process');
+      const lines = args[1] || '50';
+      try {
+        execSync(`tail -${lines} ${LOG_FILE}`, { stdio: 'inherit' });
+      } catch {
+        console.log('No log file found');
+      }
+      break;
+    }
+
+    case 'help':
+    case '--help':
+    case '-h':
+    default:
+      console.log(`
+🐝 Swarm CLI - Parallel Task Execution (Gemini Flash)
+
+Daemon:
+  swarm start                  Start daemon (background)
+  swarm stop                   Stop daemon
+  swarm status                 Show daemon status
+  swarm restart                Restart daemon
+  swarm daemon fg              Run in foreground (debug)
+  swarm logs [N]               Show last N lines of log
+
+Tasks (auto-uses daemon if running):
+  swarm parallel "p1" "p2"     Run prompts in parallel
+  swarm research "s1" "s2"     Research subjects
+       --topic "angle"         Research angle
+  swarm bench --tasks N        Benchmark N parallel tasks
+
+Options:
+  --port PORT                  Daemon port (default: 9999)
+  --workers N                  Warm workers (default: 6)
+
+Examples:
+  swarm start
+  swarm parallel "What is AI?" "What is ML?" "What is DL?"
+  swarm research OpenAI Anthropic Google --topic "AI models 2025"
+  swarm bench --tasks 20
+`);
+  }
+}
+
+main().catch(e => {
+  console.error('Error:', e.message);
+  process.exit(1);
+});
