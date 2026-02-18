@@ -284,7 +284,7 @@ async function recallBrainDB(prompts) {
   } catch { return null; }
 }
 
-async function runParallel(prompts, port, useContext = false) {
+async function runParallel(prompts, port, useContext = false, fullOutput = false) {
   let finalPrompts = prompts;
   
   if (useContext) {
@@ -308,7 +308,7 @@ async function runParallel(prompts, port, useContext = false) {
       const result = await httpPost(port, '/parallel', { prompts: finalPrompts });
       console.log(' done!\n');
       
-      const fullOutput = args.includes('--full');
+      // fullOutput passed as parameter
       console.log('📊 Results:');
       result.results.forEach((r, i) => {
         const text = r ? r.trim() : '❌ FAILED';
@@ -456,7 +456,8 @@ async function main() {
         console.error('Usage: swarm parallel "prompt1" "prompt2" ... [--context]');
         process.exit(1);
       }
-      await runParallel(prompts, port, useCtx);
+      const fullFlag = args.includes('--full');
+      await runParallel(prompts, port, useCtx, fullFlag);
       break;
     }
 

@@ -90,6 +90,12 @@ module.exports = {
     warnAt: userConfig?.node_scaling?.cost?.warn_at || 1.00,
   },
 
+  // Web Search (Google Search grounding via Gemini API)
+  webSearch: {
+    enabled: userConfig?.node_scaling?.web_search?.enabled ?? false,
+    parallelDefault: userConfig?.node_scaling?.web_search?.parallel_default ?? false,
+  },
+
   // Node specializations and their tools
   // All system prompts are wrapped with security policy
   nodeTypes: {

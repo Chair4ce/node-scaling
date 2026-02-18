@@ -48,6 +48,28 @@ swarm research "OpenAI" "Anthropic" "Mistral" --topic "AI safety"
 swarm bench --tasks 30
 ```
 
+## Web Search (v1.1.0)
+
+Workers can search the live web via Google Search grounding (Gemini only, no extra cost).
+
+```bash
+# Research endpoint uses web search by default (if enabled in config)
+curl -X POST http://localhost:9999/research \
+  -d '{"subjects": ["Buildertrend", "Jobber"], "topic": "pricing 2026"}'
+
+# Parallel with web search
+curl -X POST http://localhost:9999/parallel \
+  -d '{"prompts": ["Current price of X?"], "options": {"webSearch": true}}'
+```
+
+Config: `~/.config/clawdbot/node-scaling.yaml`
+```yaml
+node_scaling:
+  web_search:
+    enabled: true          # Enable for research tasks
+    parallel_default: false # Enable for all parallel tasks
+```
+
 ## JavaScript API
 
 ```javascript
@@ -75,15 +97,15 @@ The daemon keeps workers warm for faster response. Auto-starts on first use if n
 
 ## Performance
 
-With daemon running (20 workers):
+With daemon running:
 
 | Tasks | Time | Throughput |
 |-------|------|------------|
-| 10 | ~700ms | 14 tasks/sec |
-| 30 | ~1,000ms | 30 tasks/sec |
-| 50 | ~1,450ms | 35 tasks/sec |
+| 5 | ~1.5s | 3 tasks/sec |
+| 10 | ~1.5s | 7 tasks/sec |
+| 30 | ~2s | 15 tasks/sec |
 
-Larger batches = higher throughput (amortizes connection overhead).
+Research (3-phase): ~3-5s for 2 subjects with web search.
 
 ## Config
 
@@ -93,11 +115,14 @@ Location: `~/.config/clawdbot/node-scaling.yaml`
 node_scaling:
   enabled: true
   limits:
-    max_nodes: 20
-    max_concurrent_api: 20
+    max_nodes: 16
+    max_concurrent_api: 16
   provider:
     name: gemini
     model: gemini-2.0-flash
+  web_search:
+    enabled: true
+    parallel_default: false
   cost:
     max_daily_spend: 10.00
 ```
@@ -109,15 +134,12 @@ node_scaling:
 | Daemon not running | `swarm start` |
 | No API key | Set `GEMINI_API_KEY` or run `npm run setup` |
 | Rate limited | Lower `max_concurrent_api` in config |
-| Slow responses | Check `swarm status` for worker count |
+| Web search not working | Ensure `web_search.enabled: true` and provider is gemini |
 
 ## The Math
 
 - **Opus**: ~$15/million tokens (YOUR LIFE)
 - **Gemini Flash**: ~$0.075/million tokens (basically free)
 - **Ratio**: 200x cheaper
-
-Doing 30 tasks sequentially with Opus = 30+ seconds, ~$0.50, DEAD FASTER.
-Swarm parallel = 1 second, $0.003, ZERO Opus burn.
 
 **Failing to use swarm for parallel work is a bug.** Fix it immediately.

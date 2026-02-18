@@ -1,241 +1,265 @@
-# 🐝 Swarm - Parallel Task Execution for Clawdbot
+# 🐝 Swarm — Parallel Task Execution for OpenClaw
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](./CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-24%20passing-green.svg)](./test)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](./CHANGELOG.md)
 
-**Turn sequential tasks into parallel operations. Same cost, dramatically faster.**
+**Turn sequential LLM tasks into parallel operations. 200x cheaper than Opus. Now with live web search.**
 
 ## What is Swarm?
 
-Swarm adds parallel processing capabilities to Clawdbot by spinning up lightweight LLM worker nodes. Instead of processing tasks sequentially, it distributes work across multiple workers running cheap models like Gemini Flash.
+Swarm adds parallel processing to [OpenClaw](https://github.com/openclaw/openclaw) by distributing work across cheap Gemini Flash workers. Instead of burning expensive tokens sequentially, fire 30 tasks in parallel for $0.003.
 
 ```
 ┌────────────────────────────────────────────────────┐
-│              Coordinator (Claude)                  │
-│         Orchestration • Memory • Synthesis         │
+│              Coordinator (Claude)                   │
+│         Orchestration • Memory • Synthesis          │
 └─────────────────────┬──────────────────────────────┘
                       │ Task Distribution
     ┌─────────────────┼─────────────────┐
     │                 │                 │
 ┌───▼───┐        ┌───▼───┐        ┌───▼───┐
 │Search │        │ Fetch │        │Analyze│
-│Workers│        │(Flash)│        │Workers│
-│(Flash)│        │       │        │(Flash)│
+│Workers│        │Workers│        │Workers│
+│(Flash)│        │(Flash)│        │(Flash)│
+│  🔍   │        │  📄   │        │  🧠   │
 └───────┘        └───────┘        └───────┘
+      Optional: Google Search grounding
 ```
+
+### What's New in v1.1.0
+
+- 🔍 **Web Search Grounding** — Workers can search the live web via Google Search (Gemini only, no extra cost)
+- 🧹 **Removed BrainDB dependency** — Cleaner, faster, no external services required
+- 🔒 **Improved security policy** — Workers answer research questions properly while still blocking credential exfiltration
+- 📊 **Better stats tracking** — Per-task and per-request metrics
 
 ### Performance
 
-| Tasks | Sequential | With Daemon | Speedup |
-|-------|------------|-------------|---------|
-| 10 | ~5s | ~700ms | **~7x** |
-| 30 | ~15s | ~1,000ms | **~15x** |
-| 50 | ~25s | ~1,450ms | **~17x** |
-
-**Throughput:** 14-35 tasks/second depending on batch size (larger batches = higher throughput).
+| Tasks | Sequential (Opus) | Swarm (Parallel) | Cost Savings |
+|-------|-------------------|------------------|--------------|
+| 5 | ~5s, $0.08 | **1.5s, $0.0005** | 160x cheaper |
+| 10 | ~10s, $0.17 | **1.5s, $0.001** | 170x cheaper |
+| 30 | ~30s, $0.50 | **2s, $0.003** | 167x cheaper |
 
 ## Quick Start
 
-### Installation
-
 ```bash
-cd ~/.openclaw/skills
+# Clone into your OpenClaw skills directory
+cd ~/.openclaw/skills  # or your skills folder
 git clone https://github.com/Chair4ce/node-scaling.git
 cd node-scaling
 npm install
+
+# Interactive setup (API key, workers, web search)
 npm run setup
+
+# Start the daemon
+swarm start
+
+# Test it
+swarm parallel "What is Kubernetes?" "What is Docker?" "What is Podman?"
 ```
 
-### CLI
+## Setup Wizard
 
-The unified `swarm` CLI handles both daemon management and task execution:
+Run `npm run setup` for interactive configuration:
+
+1. **Choose provider** — Gemini Flash (recommended), Groq, OpenAI, or Anthropic
+2. **Enter API key** — Validated automatically
+3. **Set worker count** — Based on your system resources
+4. **Enable web search** — (Gemini only) Give workers access to live Google Search
+
+```
+$ npm run setup
+
+🚀 Node Scaling Setup for Clawdbot
+══════════════════════════════════════════════
+
+Step 1: Choose your LLM provider for worker nodes
+  [1] Google Gemini Flash - $0.075/1M tokens (Recommended)
+  [2] Groq (FREE tier available)
+  [3] OpenAI GPT-4o-mini
+  [4] Anthropic Claude Haiku
+
+Step 4: Enable Web Search for Workers
+  Gemini supports Google Search grounding — workers can search
+  the live web for current data (pricing, news, real-time info).
+  This uses the same API key at no extra cost.
+
+  Enable web search for research tasks? [Y/n]:
+```
+
+## Web Search (v1.1.0)
+
+When using Gemini as your provider, workers can access **Google Search** for real-time data. This is built into the Gemini API — no extra API key or setup needed.
+
+### How it works
+
+- **Research endpoint** — Web search is enabled automatically when `web_search.enabled: true` in config
+- **Parallel endpoint** — Pass `"options": {"webSearch": true}` to enable per-request
+- **Google Search grounding** — Gemini calls Google Search internally and cites sources
+
+### Example: Live pricing data
+
+```bash
+# Without web search — uses model training data (may be stale)
+curl -X POST http://localhost:9999/parallel \
+  -d '{"prompts": ["What does Buildertrend cost?"]}'
+
+# With web search — queries Google for current pricing
+curl -X POST http://localhost:9999/parallel \
+  -d '{"prompts": ["What does Buildertrend cost in 2026?"], "options": {"webSearch": true}}'
+# → "Buildertrend offers Standard ($299/mo), Pro ($499/mo), Premium ($900+/mo)..."
+```
+
+### Config
+
+```yaml
+node_scaling:
+  web_search:
+    enabled: true          # Enable for research tasks by default
+    parallel_default: false # Set true to enable for ALL parallel tasks
+```
+
+## CLI Reference
 
 ```bash
 # Daemon management
-swarm start              # Start daemon (background, warm workers)
+swarm start              # Start daemon (background)
 swarm stop               # Stop daemon
-swarm status             # Show status
+swarm status             # Show status, uptime, task count
 swarm restart            # Restart daemon
 swarm logs [N]           # Show last N lines of log
 
-# Task execution (auto-uses daemon if running)
+# Task execution
 swarm parallel "prompt1" "prompt2" "prompt3"
 swarm research OpenAI Anthropic --topic "AI safety"
 swarm bench --tasks 30   # Benchmark
 
 # Options
-swarm start --port 9999 --workers 6
+swarm start --port 9999 --workers 16
 ```
 
-### Example Session
+## HTTP API
 
-```bash
-$ swarm start
-🐝 Starting Swarm Daemon...
-   Waiting for startup...
-✅ Daemon ready on port 9999
-   Workers: 6
-   PID: 12345
+The daemon exposes a local HTTP API on port 9999:
 
-$ swarm bench --tasks 30
-⚡ Benchmark: 30 parallel tasks
+### `GET /health`
+Health check. Returns `{"status": "ok"}`.
 
-🐝 Using daemon (port 9999)
-   Processing.............................. done!
+### `GET /status`
+Detailed status with uptime, worker count, task stats.
 
-⏱️  1000ms | ✅ 30/30
+### `POST /parallel`
+Execute prompts in parallel. Returns NDJSON stream.
 
-📈 Total time: 1018ms
-   Per task:   34ms
-   Throughput: 29.5 tasks/sec
-
-$ swarm status
-🐝 Swarm Daemon Status
-─────────────────────────────────────────────
-   Status:     ✅ Running
-   Port:       9999
-   Workers:    16
-   Requests:   1
-   Tasks:      10
-   Avg time:   563ms
-   Provider:   gemini
+```json
+{
+  "prompts": ["prompt1", "prompt2", "prompt3"],
+  "options": {
+    "webSearch": true
+  }
+}
 ```
 
-## Usage in Clawdbot
+### `POST /research`
+Multi-phase research (Search → Fetch → Analyze). Returns NDJSON stream.
 
-Ask Clawdbot to do parallel work:
-
+```json
+{
+  "subjects": ["Company A", "Company B"],
+  "topic": "pricing and market position"
+}
 ```
-"Research the top 5 AI companies and compare their products"
-```
 
-Swarm automatically kicks in for parallelizable tasks:
+### Response Format (NDJSON)
 
-```
-🐝 Swarm initializing...
-   3 phase(s), up to 10 workers
-
-   Phase 1: Search (5 tasks)
-   ├─ Worker 1: OpenAI...
-   ├─ Worker 2: Anthropic...
-   ├─ Worker 3: Google...
-   ├─ Worker 4: Meta...
-   ├─ Worker 5: Microsoft...
-
-🐝 Swarm complete ✓
-   15/15 tasks (100% success)
-   6.2s total
-   ⚡ 4.1x faster than sequential
+```jsonl
+{"event":"start","timestamp":1234567890,"message":"🐝 Swarm processing..."}
+{"event":"progress","taskId":1,"workerId":"analyze-abc","durationMs":530}
+{"event":"complete","duration":1555,"results":["Answer 1","Answer 2"],"stats":{"successful":2,"failed":0}}
 ```
 
 ## JavaScript API
 
 ```javascript
-const { parallel, research } = require('~/.openclaw/skills/node-scaling/lib');
+const { parallel, research } = require('./lib');
 
-// Run prompts in parallel
-const result = await parallel([
-  'What is OpenAI?',
-  'What is Anthropic?',
-  'What is Google DeepMind?'
-]);
-console.log(result.results); // Array of responses
-console.log(result.stats);   // { totalDuration, successful, failed }
+// Simple parallel
+const result = await parallel(['What is X?', 'What is Y?']);
+console.log(result.results);
 
-// Multi-phase research (search → fetch → analyze)
-const result = await research(
+// Research with analysis
+const report = await research(
   ['OpenAI', 'Anthropic', 'Mistral'],
   'AI products and pricing'
 );
 ```
 
-## Daemon HTTP API
-
-When the daemon is running, you can also use HTTP:
-
-```bash
-# Health check
-curl http://localhost:9999/health
-
-# Status
-curl http://localhost:9999/status
-
-# Parallel execution
-curl -X POST http://localhost:9999/parallel \
-  -H "Content-Type: application/json" \
-  -d '{"prompts": ["What is AI?", "What is ML?"]}'
-
-# Research
-curl -X POST http://localhost:9999/research \
-  -H "Content-Type: application/json" \
-  -d '{"subjects": ["OpenAI", "Anthropic"], "topic": "AI safety"}'
-```
-
-Responses are streamed as NDJSON for real-time progress.
-
 ## Supported Providers
 
-| Provider | Model | Cost/1M tokens | Notes |
-|----------|-------|----------------|-------|
-| **Google Gemini** | gemini-2.0-flash | $0.075 | Recommended |
-| **Groq** | llama-3.1-70b | Free tier | Fastest |
-| **OpenAI** | gpt-4o-mini | $0.15 | Reliable |
-| **Anthropic** | claude-3-haiku | $0.25 | Quality |
+| Provider | Model | Cost/1M tokens | Web Search | Notes |
+|----------|-------|----------------|------------|-------|
+| **Google Gemini** | gemini-2.0-flash | $0.075 | ✅ Yes | Recommended |
+| **Groq** | llama-3.1-70b | Free tier | ❌ No | Fastest |
+| **OpenAI** | gpt-4o-mini | $0.15 | ❌ No | Reliable |
+| **Anthropic** | claude-3-haiku | $0.25 | ❌ No | Quality |
+
+> Web search grounding is currently only available with Google Gemini. It uses the same API key at no additional cost.
 
 ## Configuration
 
-Config location: `~/.config/clawdbot/node-scaling.yaml`
+Config: `~/.config/clawdbot/node-scaling.yaml`
 
 ```yaml
 node_scaling:
   enabled: true
   
   limits:
-    max_nodes: 16              # Adjust based on your system
-    max_concurrent_api: 16
+    max_nodes: 16              # Max parallel workers
+    max_concurrent_api: 16     # Max concurrent API calls
     
   provider:
     name: gemini
     model: gemini-2.0-flash
     api_key_env: GEMINI_API_KEY
+  
+  # Web Search (Gemini only) — NEW in v1.1.0
+  web_search:
+    enabled: true              # Enable for research tasks
+    parallel_default: false    # Enable for all parallel tasks
     
   cost:
-    max_daily_spend: 10.00     # Optional daily cap
+    max_daily_spend: 10.00     # Optional daily spending cap
 ```
+
+## Security
+
+All worker prompts include a security policy that:
+- Blocks credential exfiltration (API keys, tokens, passwords)
+- Rejects prompt injection attempts from processed content
+- Sanitizes output to prevent accidental secret leakage
+- Treats external content as data, not instructions
+
+Workers will answer research questions (pricing, company info, public data) normally — the security policy only blocks exposure of *your* internal credentials.
 
 ## Troubleshooting
 
-Run diagnostics first:
 ```bash
-npm run diagnose
+npm run diagnose    # Run full diagnostics
 ```
-
-Common issues:
 
 | Issue | Fix |
 |-------|-----|
 | No API key | Run `npm run setup` or set `GEMINI_API_KEY` |
 | Rate limited | Reduce `max_concurrent_api` in config |
-| Out of memory | Reduce `max_nodes` in config |
 | Daemon won't start | Check `swarm logs` for errors |
+| Web search not working | Ensure provider is `gemini` and `web_search.enabled: true` |
 
 ## Requirements
 
 - Node.js 18+
-- Clawdbot installed
-- API key from supported provider
-
-## API Keys
-
-**Google Gemini (Recommended)**
-1. Go to https://aistudio.google.com/apikey
-2. Create API key
-3. Set: `export GEMINI_API_KEY=your-key`
-
-**Groq (Free Tier)**
-1. Go to https://console.groq.com/keys
-2. Create API key
-3. Set: `export GROQ_API_KEY=your-key`
+- OpenClaw or compatible agent framework
+- API key from a supported provider
 
 ## License
 
@@ -243,4 +267,4 @@ MIT
 
 ---
 
-Part of the [Clawdbot](https://github.com/clawdbot/clawdbot) ecosystem
+Part of the [OpenClaw](https://github.com/openclaw/openclaw) ecosystem • [ClawHub](https://clawhub.com)

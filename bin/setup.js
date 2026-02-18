@@ -127,6 +127,13 @@ node_scaling:
     model: ${config.model}
     api_key_env: ${config.envVar}
     
+  # Web Search (Gemini only)
+  # When enabled, research tasks use Google Search grounding for live data
+  web_search:
+    enabled: ${config.webSearch || false}
+    # Set to true to enable web search for all parallel tasks by default
+    parallel_default: false
+    
   # Cost controls (optional)
   cost:
     max_daily_spend: 5.00
@@ -229,6 +236,24 @@ async function main() {
   
   print(`  ✓ Will use up to ${maxNodes} parallel workers`);
   
+  // Step 4: Web Search (Gemini only)
+  let webSearch = false;
+  if (provider.id === 'gemini') {
+    print('\nStep 4: Enable Web Search for Workers');
+    print('');
+    print('  Gemini supports Google Search grounding — workers can search');
+    print('  the live web for current data (pricing, news, real-time info).');
+    print('  This uses the same API key at no extra cost.');
+    print('');
+    const wsAnswer = await ask('  Enable web search for research tasks? [Y/n]: ');
+    webSearch = wsAnswer.toLowerCase() !== 'n';
+    if (webSearch) {
+      print('  ✓ Web search enabled — research tasks will use live Google Search');
+    } else {
+      print('  ✓ Web search disabled — workers will use model knowledge only');
+    }
+  }
+
   // Save configuration
   print('\nSaving configuration...');
   
@@ -241,6 +266,7 @@ async function main() {
     envVar: provider.envVar,
     apiKey,
     maxNodes,
+    webSearch,
   };
   
   const configPath = saveConfig(config);
