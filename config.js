@@ -90,6 +90,13 @@ module.exports = {
     warnAt: userConfig?.node_scaling?.cost?.warn_at || 1.00,
   },
 
+  // Smart routing — auto-select model tier based on complexity
+  routing: {
+    enabled: userConfig?.node_scaling?.routing?.enabled ?? true,
+    threshold: userConfig?.node_scaling?.routing?.threshold ?? 8,
+    proModel: userConfig?.node_scaling?.routing?.pro_model || 'gemini-2.5-flash',
+  },
+
   // Web Search (Google Search grounding via Gemini API)
   webSearch: {
     enabled: userConfig?.node_scaling?.web_search?.enabled ?? false,
