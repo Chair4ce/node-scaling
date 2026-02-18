@@ -291,6 +291,58 @@ async function testPerformanceGuardrails() {
   };
 }
 
+// ─── Test: Skeleton-of-Thought ──────────────────────────
+
+async function testSkeleton() {
+  console.log('\n═══ TEST: Skeleton-of-Thought ═══\n');
+  
+  const task = 'Write a guide to remote work best practices for engineering teams';
+  
+  // 1. Skeleton-of-Thought
+  console.log('1. Skeleton-of-Thought (outline → parallel expand → merge)...');
+  const t1 = Date.now();
+  const sot = await post('/skeleton', { task, maxSections: 5 });
+  const sotDuration = Date.now() - t1;
+  const sotOutput = sot.last?.output || '';
+  const skeleton = sot.last?.skeleton || {};
+  console.log(`   Duration: ${sotDuration}ms`);
+  console.log(`   Sections: ${skeleton.sectionCount} generated, ${skeleton.expandedCount} expanded`);
+  console.log(`   Sections: ${(skeleton.sections || []).join(', ')}`);
+  console.log(`   Output: ${sotOutput.length} chars`);
+  
+  // 2. Standard auto-chain for comparison
+  console.log('\n2. Auto-chain standard (for comparison)...');
+  const t2 = Date.now();
+  const chain = await post('/chain/auto', { task, depth: 'standard' });
+  const chainDuration = Date.now() - t2;
+  const chainOutput = chain.last?.output || '';
+  console.log(`   Duration: ${chainDuration}ms`);
+  console.log(`   Output: ${String(chainOutput).length} chars`);
+  
+  // 3. Comparison
+  const sotLen = sotOutput.length;
+  const chainLen = String(chainOutput).length;
+  console.log(`\n   📊 SoT: ${sotLen} chars in ${sotDuration}ms (${Math.round(sotLen / (sotDuration / 1000))} chars/sec)`);
+  console.log(`   📊 Chain: ${chainLen} chars in ${chainDuration}ms (${Math.round(chainLen / (chainDuration / 1000))} chars/sec)`);
+  console.log(`   📊 SoT produces ${(sotLen / Math.max(chainLen, 1)).toFixed(1)}x more content`);
+  
+  // Assertions
+  assert(skeleton.sectionCount >= 3, `Too few sections: ${skeleton.sectionCount}`);
+  assert(skeleton.expandedCount >= 3, `Too few expanded: ${skeleton.expandedCount}`);
+  assert(sotOutput.length > 1000, `SoT output too short: ${sotOutput.length}`);
+  assert(sotDuration < 30000, `SoT too slow: ${sotDuration}ms`);
+  
+  return {
+    feature: 'skeleton',
+    passed: true,
+    sotDuration,
+    chainDuration,
+    sotChars: sotLen,
+    chainChars: chainLen,
+    sections: skeleton.sectionCount,
+  };
+}
+
 // ─── Main ───────────────────────────────────────────────
 
 async function main() {
@@ -307,6 +359,7 @@ async function main() {
     if (feature === 'all' || feature === 'errors') results.push(await testErrors());
     if (feature === 'all' || feature === 'routing') results.push(await testRouting());
     if (feature === 'all' || feature === 'reflection') results.push(await testReflection());
+    if (feature === 'all' || feature === 'skeleton') results.push(await testSkeleton());
     if (feature === 'all' || feature === 'guardrails') results.push(await testPerformanceGuardrails());
   } catch (e) {
     console.error(`\n💀 TEST FAILED: ${e.message}`);
