@@ -73,6 +73,26 @@ async function main() {
         console.log(`   Tasks:     ${status.totalTasks}`);
         console.log(`   Avg time:  ${status.avgResponseMs}ms`);
         console.log(`   Uptime:    ${Math.round(status.uptime / 1000)}s`);
+        if (status.cost) {
+          const s = status.cost.session || status.cost;
+          const d = status.cost.daily;
+          console.log('');
+          console.log('💰 Cost (this session)');
+          console.log('─'.repeat(40));
+          console.log(`   Tokens:    ${s.inputTokens.toLocaleString()} in / ${s.outputTokens.toLocaleString()} out`);
+          console.log(`   Swarm:     $${s.swarmCost}`);
+          console.log(`   Opus eq:   $${s.opusEquivalent}`);
+          console.log(`   Saved:     $${s.saved} (${s.savingsMultiplier})`);
+          if (d && parseFloat(d.swarmCost) !== parseFloat(s.swarmCost)) {
+            console.log('');
+            console.log('📊 Cost (today total)');
+            console.log('─'.repeat(40));
+            console.log(`   Tokens:    ${d.inputTokens.toLocaleString()} in / ${d.outputTokens.toLocaleString()} out`);
+            console.log(`   Swarm:     $${d.swarmCost}`);
+            console.log(`   Opus eq:   $${d.opusEquivalent}`);
+            console.log(`   Saved:     $${d.saved} (${d.savingsMultiplier})`);
+          }
+        }
       }
       break;
     }
@@ -125,7 +145,7 @@ async function main() {
             console.log('');
             for (const analysis of event.analyses) {
               console.log(`=== ${analysis.subject} ===`);
-              console.log(analysis.analysis?.substring(0, 500) + '...');
+              console.log(analysis.analysis || '(no output)');
               console.log('');
             }
             break;
@@ -165,7 +185,7 @@ async function main() {
             console.log(`✓ Complete in ${event.duration}ms`);
             console.log('');
             event.results.forEach((result, i) => {
-              console.log(`[${i + 1}] ${result?.substring(0, 200) || 'No result'}...`);
+              console.log(`[${i + 1}] ${result || '(no output)'}`);
               console.log('');
             });
             break;
@@ -270,6 +290,9 @@ async function main() {
                 console.log('\n');
                 console.log(`✅ Chain complete in ${event.duration}ms`);
                 console.log(`   Tasks: ${event.stats.totalTasks} (${event.stats.successful} ok, ${event.stats.failed} failed)`);
+                if (event.cost?.session) {
+                  console.log(`   Cost:  $${event.cost.session.swarmCost} (Opus eq: $${event.cost.session.opusEquivalent}, ${event.cost.session.savingsMultiplier} cheaper)`);
+                }
                 console.log('');
                 console.log('─'.repeat(50));
                 console.log('FINAL OUTPUT:');

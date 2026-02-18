@@ -261,14 +261,27 @@ async function daemonStatus(port) {
   }
   
   // Cost summary
-  if (status.cost && status.cost.inputTokens > 0) {
-    console.log('');
-    console.log('   💰 Cost (this session)');
-    const tokens = status.cost.inputTokens + status.cost.outputTokens;
-    console.log(`   Tokens:     ${tokens.toLocaleString()}`);
-    console.log(`   Swarm cost: $${status.cost.swarmCost}`);
-    console.log(`   Opus equiv: $${status.cost.opusEquivalent}`);
-    console.log(`   Saved:      $${status.cost.saved} (${status.cost.savingsMultiplier} cheaper)`);
+  const s = status.cost?.session || status.cost;
+  const d = status.cost?.daily;
+  if (s && (s.inputTokens > 0 || d)) {
+    if (s.inputTokens > 0) {
+      console.log('');
+      console.log('   💰 Cost (this session)');
+      const tokens = s.inputTokens + s.outputTokens;
+      console.log(`   Tokens:     ${tokens.toLocaleString()}`);
+      console.log(`   Swarm cost: $${s.swarmCost}`);
+      console.log(`   Opus equiv: $${s.opusEquivalent}`);
+      console.log(`   Saved:      $${s.saved} (${s.savingsMultiplier} cheaper)`);
+    }
+    if (d && parseFloat(d.swarmCost) > parseFloat(s.swarmCost || 0)) {
+      console.log('');
+      console.log('   📊 Cost (today total)');
+      const dTokens = d.inputTokens + d.outputTokens;
+      console.log(`   Tokens:     ${dTokens.toLocaleString()}`);
+      console.log(`   Swarm cost: $${d.swarmCost}`);
+      console.log(`   Opus equiv: $${d.opusEquivalent}`);
+      console.log(`   Saved:      $${d.saved} (${d.savingsMultiplier} cheaper)`);
+    }
   }
 }
 
@@ -530,7 +543,8 @@ async function main() {
           }
         }
         if (caps.cost) {
-          console.log(`\n   💰 Session cost: $${caps.cost.swarmCost} (saved $${caps.cost.saved})`);
+          const sc = caps.cost?.session || caps.cost;
+          console.log(`\n   💰 Session cost: $${sc.swarmCost} (saved $${sc.saved})`);
         }
         console.log('');
       } catch (e) {
