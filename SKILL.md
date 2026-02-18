@@ -88,8 +88,9 @@ const result = await research(['Subject1', 'Subject2'], 'topic');
 ```bash
 swarm start              # Start daemon (background)
 swarm stop               # Stop daemon
-swarm status             # Show status, uptime, task count
+swarm status             # Show status, uptime, cost savings
 swarm restart            # Restart daemon
+swarm savings            # Monthly savings report
 swarm logs [N]           # Last N lines of daemon log
 ```
 

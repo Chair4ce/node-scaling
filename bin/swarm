@@ -250,53 +250,34 @@ async function daemonStatus(port) {
   console.log(`   Requests:   ${status.requests}`);
   console.log(`   Tasks:      ${status.totalTasks}`);
   if (status.avgResponseMs > 0) {
-    console.log(`   Avg time:   ${status.avgResponseMs}ms`);
+    console.log(`   Avg req:    ${status.avgResponseMs}ms`);
+  }
+  if (status.avgTaskMs > 0) {
+    console.log(`   Avg task:   ${status.avgTaskMs}ms`);
   }
   console.log(`   Provider:   ${status.config?.provider || 'gemini'}`);
+  if (status.config?.webSearch) {
+    console.log(`   Web search: ✅ ${status.config.webSearchMode || 'enabled'}`);
+  }
+  
+  // Cost summary
+  if (status.cost && status.cost.inputTokens > 0) {
+    console.log('');
+    console.log('   💰 Cost (this session)');
+    const tokens = status.cost.inputTokens + status.cost.outputTokens;
+    console.log(`   Tokens:     ${tokens.toLocaleString()}`);
+    console.log(`   Swarm cost: $${status.cost.swarmCost}`);
+    console.log(`   Opus equiv: $${status.cost.opusEquivalent}`);
+    console.log(`   Saved:      $${status.cost.saved} (${status.cost.savingsMultiplier} cheaper)`);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
 // Task Commands
 // ─────────────────────────────────────────────────────────────
 
-async function recallBrainDB(prompts) {
-  const query = prompts.join(' ').substring(0, 500);
-  try {
-    const result = await new Promise((resolve, reject) => {
-      const body = JSON.stringify({ query, limit: 7 });
-      const req = http.request('http://localhost:3333/memory/recall', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-        timeout: 10000,
-      }, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
-      });
-      req.on('error', () => resolve(null));
-      req.on('timeout', () => { req.destroy(); resolve(null); });
-      req.write(body);
-      req.end();
-    });
-    if (!result?.ok || !result?.results?.length) return null;
-    const memories = result.results.map((m, i) => `${i + 1}. [${m.type}] ${m.trigger}: ${m.content}`).join('\n');
-    return `<context source="braindb" count="${result.results.length}">\nRelevant memories from knowledge graph:\n${memories}\n</context>`;
-  } catch { return null; }
-}
-
 async function runParallel(prompts, port, useContext = false, fullOutput = false) {
   let finalPrompts = prompts;
-  
-  if (useContext) {
-    console.log('🧠 Loading BrainDB context...');
-    const ctx = await recallBrainDB(prompts);
-    if (ctx) {
-      finalPrompts = prompts.map(p => `${ctx}\n\n${p}`);
-      console.log(`   ✅ ${(ctx.match(/\n/g) || []).length - 2} memories loaded`);
-    } else {
-      console.log('   ⚠️  BrainDB unavailable, proceeding without context');
-    }
-  }
   
   const useDaemon = await isDaemonRunning(port);
   
@@ -486,6 +467,27 @@ async function main() {
       break;
     }
 
+    case 'savings':
+    case 'cost': {
+      const { SwarmMetrics } = require('../lib/metrics');
+      const m = new SwarmMetrics();
+      const report = m.getMonthlySavings();
+      if (report.error) {
+        console.log(`\n  ${report.error}\n`);
+      } else {
+        console.log(`\n🐝 Swarm Savings Report — ${report.month}`);
+        console.log('─'.repeat(45));
+        console.log(`   Days active: ${report.daysActive}`);
+        console.log(`   Tasks run:   ${report.totalTasks.toLocaleString()}`);
+        console.log(`   Tokens used: ${report.totalTokens.toLocaleString()}`);
+        console.log(`   Swarm cost:  ${report.swarmCost}`);
+        console.log(`   Opus equiv:  ${report.opusEquivalent}`);
+        console.log(`   💰 Saved:    ${report.saved} (${report.savingsMultiplier} cheaper)`);
+        console.log('');
+      }
+      break;
+    }
+
     case 'log':
     case 'logs': {
       const { execSync } = require('child_process');
@@ -498,12 +500,150 @@ async function main() {
       break;
     }
 
+    case 'capabilities':
+    case 'caps': {
+      try {
+        const caps = await httpGet(port, '/capabilities');
+        console.log('\n🐝 Swarm Capabilities (v' + (caps.version || '?') + ')');
+        console.log('─'.repeat(55));
+        console.log(`   Provider: ${caps.provider} (${caps.model})`);
+        console.log(`   Web search: ${caps.webSearch ? '✅ grounding' : '❌ disabled'}`);
+        console.log(`   Max workers: ${caps.limits?.maxWorkers || '?'}`);
+        console.log(`   Retries: ${caps.limits?.retries || 0}`);
+        console.log('');
+        console.log('Execution Modes:');
+        for (const [name, mode] of Object.entries(caps.modes || {})) {
+          console.log(`\n   📌 ${name.toUpperCase()}`);
+          console.log(`      ${mode.description}`);
+          console.log(`      Use when: ${mode.when}`);
+          if (mode.stageModes) {
+            console.log('      Stage types:');
+            for (const [sm, desc] of Object.entries(mode.stageModes)) {
+              console.log(`        • ${sm}: ${desc}`);
+            }
+          }
+          if (mode.builtInPerspectives) {
+            console.log(`      Perspectives: ${mode.builtInPerspectives.join(', ')}`);
+          }
+          if (mode.builtInTransforms) {
+            console.log(`      Transforms: ${mode.builtInTransforms.join(', ')}`);
+          }
+        }
+        if (caps.cost) {
+          console.log(`\n   💰 Session cost: $${caps.cost.swarmCost} (saved $${caps.cost.saved})`);
+        }
+        console.log('');
+      } catch (e) {
+        console.error('❌ Could not fetch capabilities. Is daemon running?');
+      }
+      break;
+    }
+
+    case 'chain': {
+      const chainArg = args[1];
+      if (!chainArg) {
+        console.error('Usage: swarm chain <json-file> | echo \'{"stages":[...]}\' | swarm chain --stdin');
+        process.exit(1);
+      }
+      
+      let chainDef;
+      if (chainArg === '--stdin') {
+        const chunks = [];
+        for await (const chunk of process.stdin) chunks.push(chunk);
+        chainDef = JSON.parse(Buffer.concat(chunks).toString());
+      } else {
+        const filePath = require('path').resolve(chainArg);
+        chainDef = JSON.parse(require('fs').readFileSync(filePath, 'utf8'));
+      }
+
+      console.log(`\n🐝 Running chain: ${chainDef.name || 'unnamed'}`);
+      console.log(`   Stages: ${chainDef.stages?.length || 0}`);
+      for (const stage of chainDef.stages || []) {
+        const persp = stage.perspectives ? stage.perspectives.join(', ') : (stage.perspective || 'default');
+        console.log(`   → ${stage.name || '?'} (${stage.mode || 'single'}) [${persp}]`);
+      }
+      console.log('');
+
+      // Stream from daemon
+      await new Promise((resolve, reject) => {
+        const postData = JSON.stringify(chainDef);
+        const req = http.request({
+          hostname: 'localhost',
+          port,
+          path: '/chain',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) },
+          timeout: 120000,
+        }, (res) => {
+          let buffer = '';
+          res.on('data', (chunk) => {
+            buffer += chunk.toString();
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const event = JSON.parse(line);
+                switch (event.event) {
+                  case 'start':
+                    console.log(`⚡ ${event.message}`);
+                    break;
+                  case 'phase_start':
+                    console.log(`\n📍 Stage: ${event.name} (${event.taskCount} tasks)`);
+                    break;
+                  case 'phase_complete':
+                    console.log(`   ✅ ${event.name} — ${event.durationMs}ms`);
+                    break;
+                  case 'task':
+                    process.stdout.write('.');
+                    break;
+                  case 'complete':
+                    console.log('\n');
+                    console.log(`✅ Chain complete in ${event.duration}ms`);
+                    console.log(`   Tasks: ${event.stats?.totalTasks} (${event.stats?.successful} ok, ${event.stats?.failed} failed)`);
+                    console.log('\n' + '─'.repeat(55));
+                    console.log('FINAL OUTPUT:');
+                    console.log('─'.repeat(55));
+                    if (typeof event.output === 'string') {
+                      console.log(event.output);
+                    } else if (Array.isArray(event.output)) {
+                      event.output.forEach((o, i) => {
+                        console.log(`\n--- Result ${i + 1} ---`);
+                        console.log(o);
+                      });
+                    } else {
+                      console.log(JSON.stringify(event.output, null, 2));
+                    }
+                    console.log('\n' + '─'.repeat(55));
+                    console.log('Stage breakdown:');
+                    for (const stage of event.stages || []) {
+                      console.log(`   ${stage.success ? '✅' : '❌'} ${stage.stage} (${stage.mode}) — ${stage.durationMs}ms — ${stage.results?.length || 0} results`);
+                    }
+                    console.log('');
+                    break;
+                  case 'error':
+                    console.error(`❌ Error: ${event.error || JSON.stringify(event.errors)}`);
+                    break;
+                }
+              } catch {}
+            }
+          });
+          res.on('end', resolve);
+          res.on('error', reject);
+        });
+        req.on('error', reject);
+        req.write(postData);
+        req.end();
+      });
+      break;
+    }
+
     case 'help':
     case '--help':
     case '-h':
     default:
       console.log(`
-🐝 Swarm CLI - Parallel Task Execution (Gemini Flash)
+🐝 Swarm CLI - Parallel Task Execution (Gemini Flash) v1.3.0
 
 Daemon:
   swarm start                  Start daemon (background)
@@ -512,24 +652,33 @@ Daemon:
   swarm restart                Restart daemon
   swarm daemon fg              Run in foreground (debug)
   swarm logs [N]               Show last N lines of log
+  swarm savings                Monthly cost savings report
 
-Tasks (auto-uses daemon if running):
+Execution:
   swarm parallel "p1" "p2"     Run prompts in parallel
   swarm research "s1" "s2"     Research subjects
        --topic "angle"         Research angle
+  swarm chain <file.json>      Run refinement pipeline
+  swarm chain --stdin          Read chain from stdin
   swarm bench --tasks N        Benchmark N parallel tasks
+
+Discovery:
+  swarm capabilities           Show available modes & perspectives
 
 Options:
   --port PORT                  Daemon port (default: 9999)
   --workers N                  Warm workers (default: 6)
-  --context                    Memory Multiplexer: pre-fetch BrainDB
-                               memories and inject into all workers
+  --context                    Inject BrainDB memories into prompts
+
+Chain perspectives: extractor, filter, enricher, analyst,
+  synthesizer, challenger, optimizer, strategist, researcher, critic
 
 Examples:
   swarm start
   swarm parallel "What is AI?" "What is ML?" "What is DL?"
   swarm research OpenAI Anthropic Google --topic "AI models 2025"
-  swarm bench --tasks 20
+  swarm chain analysis-pipeline.json
+  swarm capabilities
 `);
   }
 }

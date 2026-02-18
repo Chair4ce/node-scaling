@@ -1,6 +1,6 @@
 # 🐝 Swarm — Parallel Task Execution for OpenClaw
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](./CHANGELOG.md)
 
 **Turn sequential LLM tasks into parallel operations. 200x cheaper than Opus. Now with live web search.**
 
@@ -25,12 +25,14 @@ Swarm adds parallel processing to [OpenClaw](https://github.com/openclaw/opencla
       Optional: Google Search grounding
 ```
 
-### What's New in v1.1.0
+### What's New in v1.2.0
 
-- 🔍 **Web Search Grounding** — Workers can search the live web via Google Search (Gemini only, no extra cost)
-- 🧹 **Removed BrainDB dependency** — Cleaner, faster, no external services required
-- 🔒 **Improved security policy** — Workers answer research questions properly while still blocking credential exfiltration
-- 📊 **Better stats tracking** — Per-task and per-request metrics
+- 💰 **Cost tracking & savings reports** — See exactly how much you're saving vs Opus in real-time
+- 🔄 **Auto-retry** — Failed tasks retry automatically with backoff (skips non-transient errors)
+- ⏱️ **Task timeouts** — 30s default prevents hung workers from blocking the pool
+- 🧹 **Dead code cleanup** — Removed 1,300+ lines of unused code
+- 🔍 **Web Search Grounding** — Workers search the live web via Google Search (Gemini only, no extra cost)
+- 🔒 **Security policy** — Workers answer research questions while blocking credential exfiltration
 
 ### Performance
 
@@ -119,6 +121,33 @@ node_scaling:
     enabled: true          # Enable for research tasks by default
     parallel_default: false # Set true to enable for ALL parallel tasks
 ```
+
+## Cost Tracking (v1.2.0)
+
+Swarm tracks every token and shows you exactly how much you're saving compared to running the same tasks on Opus.
+
+```bash
+# Real-time session costs
+$ swarm status
+   💰 Cost (this session)
+   Tokens:     12,340
+   Swarm cost: $0.001234
+   Opus equiv: $0.2851
+   Saved:      $0.2839 (231x cheaper)
+
+# Monthly savings report
+$ swarm savings
+🐝 Swarm Savings Report — 2026-02
+─────────────────────────────────────────────
+   Days active: 14
+   Tasks run:   1,247
+   Tokens used: 2,340,000
+   Swarm cost:  $0.23
+   Opus equiv:  $52.41
+   💰 Saved:    $52.18 (227x cheaper)
+```
+
+Cost data persists across daemon restarts in `~/.config/clawdbot/swarm-metrics/daily-summary.json`.
 
 ## CLI Reference
 

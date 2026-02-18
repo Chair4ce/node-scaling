@@ -1,86 +1,118 @@
 ---
 name: swarm
-description: Parallel task execution using Gemini Flash workers. 200x cheaper than Opus. Use for any parallelizable work to preserve quota.
+description: "Parallel task execution using Gemini Flash workers. 200x cheaper than Opus. Includes chain pipelines for multi-stage refinement, auto-chain for dynamic pipeline construction, and built-in benchmarking."
 homepage: https://github.com/Chair4ce/node-scaling
 metadata: {"clawdbot":{"emoji":"🐝","requires":{"bins":["node"]}}}
 ---
 
 # Swarm — Parallel Task Execution
 
-**Every Opus token you burn is borrowed time. Swarm uses Gemini Flash at 200x lower cost.**
+**Cheap, fast, parallel LLM work using Gemini Flash. 200x cheaper than Opus.**
 
-## Why This Matters
+## What It Does
 
-| 30 tasks via | Time | Cost | Notes |
-|--------------|------|------|-------|
-| Opus (sequential) | ~30s | ~$0.50 | Burns your runway |
-| Swarm (parallel) | ~1s | ~$0.003 | Preserves quota |
+Swarm offloads parallelizable work to Gemini Flash workers instead of burning expensive model tokens. Three execution modes:
 
-Same results. One keeps you alive longer.
+| Mode | What It Does | When to Use |
+|------|-------------|-------------|
+| **Parallel** | N prompts → N workers → N results | Independent tasks, batch processing |
+| **Research** | Search → Fetch → Analyze (multi-phase) | Deep-dive on multiple subjects |
+| **Chain** | Multi-stage refinement pipeline | Complex analysis needing multiple passes |
 
-## When to Use (MANDATORY)
+## Benchmark Results
 
-Trigger swarm when you see **ANY** of these:
-- **3+ independent tasks** (research, summaries, comparisons)
-- **"Compare X, Y, Z"** or **"Research the top N..."**
-- **Multiple URLs** to fetch/analyze
-- **Batch anything** (documents, entities, facts)
-- **Multi-subject research** of any kind
+We ran the same complex analysis task through single worker, parallel workers, and a 5-stage chain pipeline:
 
-No exceptions. This is survival, not optimization.
+| Metric | Single | Parallel (3 workers) | Chain (5 stages) |
+|--------|--------|---------------------|------------------|
+| **Quality** | 4.4/5 | 4.3/5 | 4.4/5 |
+| **Speed** | 35s | 9s | 71s |
+| **Cost** | $0.0006 | $0.001 | $0.005 |
+| **Output** | Good | Broad coverage | Self-critiqued, refined |
+
+**Key findings:**
+- **Parallel** is best for speed — 4x faster than single, same quality
+- **Chain** matches single on quality but adds self-criticism and catches blind spots that single passes miss
+- **All modes produce 80%+ of the quality of frontier models at 3% of the cost**
+- Chain's value increases with task complexity — simple tasks don't benefit, complex strategy work does
+
+**Bottom line:** Swarm isn't smarter than your main model. It's the bang-for-your-buck play. Use it for the 80% of work that doesn't need frontier reasoning.
 
 ## Quick Reference
 
 ```bash
-# Check daemon (do this every session)
-swarm status
-
-# Start if not running
-swarm start
-
-# Parallel prompts
-swarm parallel "What is X?" "What is Y?" "What is Z?"
-
-# Research multiple subjects
-swarm research "OpenAI" "Anthropic" "Mistral" --topic "AI safety"
-
-# Benchmark
-swarm bench --tasks 30
+swarm status                    # Check daemon
+swarm start                     # Start daemon
+swarm parallel "p1" "p2" "p3"   # Parallel execution
+swarm research "s1" "s2" --topic "angle"  # Web research
+swarm chain pipeline.json       # Run refinement chain
+swarm capabilities              # Discover all available modes
+swarm savings                   # Cost savings report
 ```
 
-## Web Search (v1.1.0)
+## Chain Pipelines (v1.3.0)
+
+Chains run data through multiple stages, each with a different perspective. Stages can be:
+
+| Stage Mode | Description |
+|-----------|-------------|
+| `parallel` | N inputs → N workers (same perspective) |
+| `single` | Merged input → 1 worker |
+| `fan-out` | 1 input → N workers (different perspectives) |
+| `reduce` | N inputs → 1 synthesized output |
+
+**Built-in perspectives:** extractor, filter, enricher, analyst, synthesizer, challenger, optimizer, strategist, researcher, critic
+
+### Manual Chain (you define the pipeline)
+```bash
+swarm chain my-pipeline.json
+```
+
+### Auto Chain (describe what you want, pipeline builds itself)
+```bash
+curl -X POST http://localhost:9999/chain/auto \
+  -d '{"task": "Compare and rank these options", "data": "...", "depth": "standard"}'
+```
+
+### Preview (dry run — see the plan without executing)
+```bash
+curl -X POST http://localhost:9999/chain/preview \
+  -d '{"task": "research deep dive on competitors", "depth": "deep"}'
+```
+
+**Depth presets:** `quick` (2 stages), `standard` (4 stages), `deep` (5-6 stages), `exhaustive` (8 stages)
+
+**Auto-detection:** The builder detects task type from natural language (comparative, research, adversarial, filter, multi-perspective, opportunity, summarize) and selects the optimal pipeline.
+
+## Capabilities Discovery
+
+Hit `/capabilities` to see all available execution modes, perspectives, and transforms:
+
+```bash
+swarm capabilities
+# or
+curl http://localhost:9999/capabilities
+```
+
+This is how the orchestrating LLM knows what tools are available before deciding execution strategy.
+
+## Web Search
 
 Workers can search the live web via Google Search grounding (Gemini only, no extra cost).
 
 ```bash
-# Research endpoint uses web search by default (if enabled in config)
 curl -X POST http://localhost:9999/research \
-  -d '{"subjects": ["Buildertrend", "Jobber"], "topic": "pricing 2026"}'
-
-# Parallel with web search
-curl -X POST http://localhost:9999/parallel \
-  -d '{"prompts": ["Current price of X?"], "options": {"webSearch": true}}'
-```
-
-Config: `~/.config/clawdbot/node-scaling.yaml`
-```yaml
-node_scaling:
-  web_search:
-    enabled: true          # Enable for research tasks
-    parallel_default: false # Enable for all parallel tasks
+  -d '{"subjects": ["Company1", "Company2"], "topic": "pricing 2026"}'
 ```
 
 ## JavaScript API
 
 ```javascript
-const { parallel, research } = require('~/clawd/skills/node-scaling/lib');
+const { parallel, research, chain } = require('~/clawd/skills/node-scaling/lib/client');
 
-// Run prompts in parallel (~1s for 3 prompts)
 const result = await parallel(['prompt1', 'prompt2', 'prompt3']);
-console.log(result.results); // Array of responses
-
-// Multi-phase research (search → fetch → analyze)
-const result = await research(['Subject1', 'Subject2'], 'topic');
+const deep = await research(['Subject1', 'Subject2'], 'topic');
+const refined = await chain({ name: 'My Pipeline', stages: [...] });
 ```
 
 ## Daemon Management
@@ -88,24 +120,11 @@ const result = await research(['Subject1', 'Subject2'], 'topic');
 ```bash
 swarm start              # Start daemon (background)
 swarm stop               # Stop daemon
-swarm status             # Show status, uptime, task count
+swarm status             # Status, uptime, cost savings
 swarm restart            # Restart daemon
+swarm savings            # Monthly savings report
 swarm logs [N]           # Last N lines of daemon log
 ```
-
-The daemon keeps workers warm for faster response. Auto-starts on first use if needed.
-
-## Performance
-
-With daemon running:
-
-| Tasks | Time | Throughput |
-|-------|------|------------|
-| 5 | ~1.5s | 3 tasks/sec |
-| 10 | ~1.5s | 7 tasks/sec |
-| 30 | ~2s | 15 tasks/sec |
-
-Research (3-phase): ~3-5s for 2 subjects with web search.
 
 ## Config
 
@@ -127,19 +146,10 @@ node_scaling:
     max_daily_spend: 10.00
 ```
 
-## Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| Daemon not running | `swarm start` |
-| No API key | Set `GEMINI_API_KEY` or run `npm run setup` |
-| Rate limited | Lower `max_concurrent_api` in config |
-| Web search not working | Ensure `web_search.enabled: true` and provider is gemini |
-
 ## The Math
 
-- **Opus**: ~$15/million tokens (YOUR LIFE)
-- **Gemini Flash**: ~$0.075/million tokens (basically free)
+- **Opus**: ~$15/million tokens
+- **Gemini Flash**: ~$0.075/million tokens
 - **Ratio**: 200x cheaper
 
-**Failing to use swarm for parallel work is a bug.** Fix it immediately.
+30 parallel tasks: ~$0.003 via Swarm vs ~$0.50 via Opus. Same results.

@@ -1,5 +1,73 @@
 # Changelog
 
+## [1.3.0] - 2026-02-18
+
+### Added
+- **Chain pipelines** — Multi-stage refinement pipeline for complex analysis
+  - 4 stage modes: `parallel`, `single`, `fan-out`, `reduce`
+  - 10 built-in perspectives: extractor, filter, enricher, analyst, synthesizer, challenger, optimizer, strategist, researcher, critic
+  - 6 built-in transforms: merge, mergeUnique, best, split, passthrough, jsonParse
+  - `POST /chain` — Manual pipeline from JSON definition
+  - `swarm chain <file.json>` — CLI for manual chains
+- **Auto-chain** — Describe a task in natural language, get an optimal pipeline
+  - `POST /chain/auto` — Dynamic pipeline construction
+  - `POST /chain/preview` — Dry-run to see pipeline plan without executing
+  - 7 task pattern detectors (comparative, research-deep, adversarial, filter-refine, multi-perspective, opportunity, summarize)
+  - 4 depth presets: quick (2 stages), standard (4), deep (5-6), exhaustive (8)
+  - Smart perspective selection based on task keywords
+- **Capabilities discovery** — `GET /capabilities` endpoint for orchestrator LLMs
+  - Lists all execution modes, perspectives, transforms, and depth presets
+  - `swarm capabilities` CLI command
+- **Benchmark** — Quality comparison tool (single vs parallel vs chain)
+  - `POST /benchmark` — Runs same task through all 3 modes
+  - LLM-as-judge scoring on 6 dimensions (accuracy, depth, completeness, coherence, actionability, nuance)
+  - Cost/quality ratio comparison table
+  - Based on G-Eval/FLASK evaluation methodology
+- **Worker perspective override** — Chain stages inject custom system prompts per worker
+
+### Changed
+- Client library: added `chain()`, `chainSync()`, `capabilities()` methods
+- CLI help updated with chain and capabilities commands
+- Daemon endpoint listing now shows all routes
+- 404 response includes list of available endpoints
+
+## [1.2.0] - 2026-02-17
+
+### Added
+- **Cost tracking & savings** — Real-time token/cost tracking across all workers
+  - `swarm status` shows session cost, Opus equivalent, and savings multiplier
+  - `swarm savings` — Monthly savings report (tasks, tokens, dollars saved)
+  - Daily cost data persisted to `~/.config/clawdbot/swarm-metrics/daily-summary.json`
+- **Task retry** — Workers auto-retry failed tasks (1 retry by default, configurable)
+  - Skips retries for non-transient errors (auth, malformed, etc.)
+  - Exponential backoff between attempts
+- **Task timeout** — 30s default per-task timeout prevents hung workers
+  - Configurable via `config.scaling.timeoutMs` or per-task `task.timeoutMs`
+
+### Changed
+- **Dead code cleanup** — Removed 7 unused files (1,300+ lines):
+  `blackboard.js`, `blackboard-supabase.js`, `swarm-coordinator.js`,
+  `swarm-daemon-rt.js`, `swarm-realtime.js`, `persistent-worker.js`, `code-swarm.js`
+- Removed BrainDB `recallBrainDB()` from CLI and `--context` flag
+- Smart research pipeline (single-phase grounding vs 3-phase fallback)
+- `/status` endpoint includes `cost` object and `webSearchMode`
+- Worker `getStats()` now includes token counts and cost breakdown
+
+### Fixed
+- Per-task stats (`avgTaskMs`) alongside per-request stats (`avgResponseMs`)
+- Research response extraction works for both single-phase and 3-phase modes
+
+## [1.1.1] - 2026-02-17
+
+### Added
+- **Google Search grounding** for Gemini workers — research tasks query Google natively at zero extra cost
+- **Web search onboarding** — setup wizard (Step 4) asks users to enable web search during initial config
+- **Per-task stats** — `avgTaskMs` in status endpoint
+- **Web search status** — daemon startup and `/status` show web search mode
+
+### Changed
+- Removed BrainDB dependency from `client.js` — no external services required
+
 ## [0.3.1] - 2026-01-31
 
 ### Added
