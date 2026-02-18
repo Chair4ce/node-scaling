@@ -73,6 +73,14 @@ async function main() {
         console.log(`   Tasks:     ${status.totalTasks}`);
         console.log(`   Avg time:  ${status.avgResponseMs}ms`);
         console.log(`   Uptime:    ${Math.round(status.uptime / 1000)}s`);
+        if (status.cache && status.cache.entries > 0) {
+          console.log('');
+          console.log('📦 Cache');
+          console.log('─'.repeat(40));
+          console.log(`   Entries:   ${status.cache.entries}/${status.cache.maxEntries}`);
+          console.log(`   Hit rate:  ${status.cache.hitRate}`);
+          console.log(`   Hits:      ${status.cache.hits} | Misses: ${status.cache.misses}`);
+        }
         if (status.cost) {
           const s = status.cost.session || status.cost;
           const d = status.cost.daily;

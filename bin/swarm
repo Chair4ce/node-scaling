@@ -260,6 +260,15 @@ async function daemonStatus(port) {
     console.log(`   Web search: ✅ ${status.config.webSearchMode || 'enabled'}`);
   }
   
+  // Cache summary
+  if (status.cache && (status.cache.entries > 0 || status.cache.hits > 0)) {
+    console.log('');
+    console.log('   📦 Cache');
+    console.log(`   Entries:    ${status.cache.entries}/${status.cache.maxEntries}`);
+    console.log(`   Hit rate:   ${status.cache.hitRate}`);
+    console.log(`   Hits/Miss:  ${status.cache.hits}/${status.cache.misses}`);
+  }
+
   // Cost summary
   const s = status.cost?.session || status.cost;
   const d = status.cost?.daily;
