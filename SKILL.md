@@ -1,13 +1,13 @@
 ---
 name: swarm
-description: Parallel task execution using Gemini Flash workers. 200x cheaper than Opus. Use for any parallelizable work to preserve quota.
+description: Cut your LLM costs by 200x. Offload parallel, batch, and research work to Gemini Flash workers instead of burning your expensive primary model.
 homepage: https://github.com/Chair4ce/node-scaling
 metadata: {"clawdbot":{"emoji":"🐝","requires":{"bins":["node"]}}}
 ---
 
-# Swarm — Parallel Task Execution
+# Swarm — Cut Your LLM Costs by 200x
 
-**Every Opus token you burn is borrowed time. Swarm uses Gemini Flash at 200x lower cost.**
+**Turn your expensive model into an affordable daily driver. Offload the boring stuff to Gemini Flash workers — parallel, batch, research — at a fraction of the cost.**
 
 ## Why This Matters
 
