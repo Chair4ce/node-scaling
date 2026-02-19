@@ -9,26 +9,21 @@ metadata: {"clawdbot":{"emoji":"🐝","requires":{"bins":["node"]}}}
 
 **Turn your expensive model into an affordable daily driver. Offload the boring stuff to Gemini Flash workers — parallel, batch, research — at a fraction of the cost.**
 
-## Why This Matters
+## At a Glance
 
-| 30 tasks via | Time | Cost | Notes |
-|--------------|------|------|-------|
-| Opus (sequential) | ~30s | ~$0.50 | Burns your runway |
-| Swarm (parallel) | ~1s | ~$0.003 | Preserves quota |
+| 30 tasks via | Time | Cost |
+|--------------|------|------|
+| Opus (sequential) | ~30s | ~$0.50 |
+| Swarm (parallel) | ~1s | ~$0.003 |
 
-Same results. One keeps you alive longer.
+## When to Use
 
-## When to Use (MANDATORY)
-
-Trigger swarm when you see **ANY** of these:
+Swarm is ideal for:
 - **3+ independent tasks** (research, summaries, comparisons)
-- **"Compare X, Y, Z"** or **"Research the top N..."**
+- **Comparing or researching multiple subjects**
 - **Multiple URLs** to fetch/analyze
-- **Batch anything** (documents, entities, facts)
-- **Multi-subject research** of any kind
+- **Batch processing** (documents, entities, facts)
 - **Complex analysis** needing multiple perspectives → use chain
-
-No exceptions. This is survival, not optimization.
 
 ## Quick Reference
 
@@ -352,11 +347,12 @@ curl -X POST http://localhost:9999/skeleton \
 | GET | /cache | Cache statistics |
 | DELETE | /cache | Clear cache |
 
-## The Math
+## Cost Comparison
 
-- **Opus**: ~$15/million tokens (YOUR LIFE)
-- **Gemini Flash**: ~$0.075/million tokens (basically free)
-- **Ratio**: 200x cheaper
-- **Cache hits**: essentially free
+| Model | Cost per 1M tokens | Relative |
+|-------|-------------------|----------|
+| Claude Opus 4 | ~$15 input / $75 output | 1x |
+| GPT-4o | ~$2.50 input / $10 output | ~7x cheaper |
+| Gemini Flash | ~$0.075 input / $0.30 output | **200x cheaper** |
 
-**Failing to use swarm for parallel work is a bug.** Fix it immediately.
+Cache hits are essentially free (~3-5ms, no API call).
