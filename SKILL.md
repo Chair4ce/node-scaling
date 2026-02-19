@@ -234,6 +234,102 @@ node_scaling:
 | Cache stale results | `curl -X DELETE http://localhost:9999/cache` |
 | Chain too slow | Use `depth: "quick"` or check context size |
 
+## Structured Output (v1.3.7)
+
+Force JSON output with schema validation — zero parse failures on structured tasks.
+
+```bash
+# With built-in schema
+curl -X POST http://localhost:9999/structured \
+  -d '{"prompt":"Extract entities from: Tim Cook announced iPhone 17","schema":"entities"}'
+
+# With custom schema
+curl -X POST http://localhost:9999/structured \
+  -d '{"prompt":"Classify this text","data":"...","schema":{"type":"object","properties":{"category":{"type":"string"}}}}'
+
+# JSON mode (no schema, just force JSON)
+curl -X POST http://localhost:9999/structured \
+  -d '{"prompt":"Return a JSON object with name, age, city for a fictional person"}'
+
+# List available schemas
+curl http://localhost:9999/structured/schemas
+```
+
+**Built-in schemas:** `entities`, `summary`, `comparison`, `actions`, `classification`, `qa`
+
+Uses Gemini's native `response_mime_type: application/json` + `responseSchema` for guaranteed JSON output. Includes schema validation on the response.
+
+## Majority Voting (v1.3.7)
+
+Same prompt → N parallel executions → pick the best answer. Higher accuracy on factual/analytical tasks.
+
+```bash
+# Judge strategy (LLM picks best — most reliable)
+curl -X POST http://localhost:9999/vote \
+  -d '{"prompt":"What are the key factors in SaaS pricing?","n":3,"strategy":"judge"}'
+
+# Similarity strategy (consensus — zero extra cost)
+curl -X POST http://localhost:9999/vote \
+  -d '{"prompt":"What year was Python released?","n":3,"strategy":"similarity"}'
+
+# Longest strategy (heuristic — zero extra cost)
+curl -X POST http://localhost:9999/vote \
+  -d '{"prompt":"Explain recursion","n":3,"strategy":"longest"}'
+```
+
+**Strategies:**
+- `judge` — LLM scores all candidates on accuracy/completeness/clarity/actionability, picks winner (N+1 calls)
+- `similarity` — Jaccard word-set similarity, picks consensus answer (N calls, zero extra cost)
+- `longest` — Picks longest response as heuristic for thoroughness (N calls, zero extra cost)
+
+**When to use:** Factual questions, critical decisions, or any task where accuracy > speed.
+
+| Strategy | Calls | Extra Cost | Quality |
+|----------|-------|-----------|---------|
+| similarity | N | $0 | Good (consensus) |
+| longest | N | $0 | Decent (heuristic) |
+| judge | N+1 | ~$0.0001 | Best (LLM-scored) |
+
+## Self-Reflection (v1.3.5)
+
+Optional critic pass after chain/skeleton output. Scores 5 dimensions, auto-refines if below threshold.
+
+```bash
+# Add reflect:true to any chain or skeleton request
+curl -X POST http://localhost:9999/chain/auto \
+  -d '{"task":"Analyze the AI chip market","data":"...","reflect":true}'
+
+curl -X POST http://localhost:9999/skeleton \
+  -d '{"task":"Write a market analysis","reflect":true}'
+```
+
+Proven: improved weak output from 5.0 → 7.6 avg score. Skeleton + reflect scored 9.4/10.
+
+## Skeleton-of-Thought (v1.3.6)
+
+Generate outline → expand each section in parallel → merge into coherent document. Best for long-form content.
+
+```bash
+curl -X POST http://localhost:9999/skeleton \
+  -d '{"task":"Write a comprehensive guide to SaaS pricing","maxSections":6,"reflect":true}'
+```
+
+**Performance:** 14,478 chars in 21s (675 chars/sec) — 5.1x more content than chain at 2.9x higher throughput.
+
+| Metric | Chain | Skeleton-of-Thought | Winner |
+|--------|-------|---------------------|--------|
+| Output size | 2,856 chars | 14,478 chars | SoT (5.1x) |
+| Throughput | 234 chars/sec | 675 chars/sec | SoT (2.9x) |
+| Duration | 12s | 21s | Chain (faster) |
+| Quality (w/ reflect) | ~7-8/10 | 9.4/10 | SoT |
+
+**When to use what:**
+- **SoT** → long-form content, reports, guides, docs (anything with natural sections)
+- **Chain** → analysis, research, adversarial review (anything needing multiple perspectives)
+- **Parallel** → independent tasks, batch processing
+- **Structured** → entity extraction, classification, any task needing reliable JSON
+- **Voting** → factual accuracy, critical decisions, consensus-building
+
 ## API Endpoints
 
 | Method | Path | Description |
@@ -243,10 +339,16 @@ node_scaling:
 | GET | /capabilities | Discover execution modes |
 | POST | /parallel | Execute N prompts in parallel |
 | POST | /research | Multi-phase web research |
+| POST | /skeleton | Skeleton-of-Thought (outline → expand → merge) |
 | POST | /chain | Manual chain pipeline |
 | POST | /chain/auto | Auto-build + execute chain |
 | POST | /chain/preview | Preview chain without executing |
+| POST | /chain/template | Execute pre-built template |
+| POST | /structured | Forced JSON with schema validation |
+| GET | /structured/schemas | List built-in schemas |
+| POST | /vote | Majority voting (best-of-N) |
 | POST | /benchmark | Quality comparison test |
+| GET | /templates | List chain templates |
 | GET | /cache | Cache statistics |
 | DELETE | /cache | Clear cache |
 

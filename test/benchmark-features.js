@@ -40,6 +40,17 @@ async function post(path, body) {
   });
 }
 
+async function get(path) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(path, BASE);
+    http.get(url, (res) => {
+      let buf = '';
+      res.on('data', (d) => buf += d);
+      res.on('end', () => { try { resolve(JSON.parse(buf)); } catch { resolve(buf); } });
+    }).on('error', reject);
+  });
+}
+
 function assert(condition, msg) {
   if (!condition) throw new Error(`ASSERTION FAILED: ${msg}`);
 }
@@ -343,6 +354,104 @@ async function testSkeleton() {
   };
 }
 
+// ─── Test 6: Structured Output ──────────────────────────
+
+async function testStructured() {
+  console.log('\n📋 Test: Structured Output');
+  let passed = true;
+  const checks = [];
+
+  // Test 1: Built-in schema (entities)
+  const r1 = await post('/structured', {
+    prompt: 'Extract entities: Elon Musk founded SpaceX in 2002 in Hawthorne, California.',
+    schema: 'entities',
+  });
+  const complete1 = r1.events.find(e => e.event === 'complete');
+  const hasEntities = complete1?.output?.entities?.length >= 2;
+  const valid1 = complete1?.validation?.valid === true;
+  checks.push({ name: 'Built-in schema (entities)', ok: hasEntities && valid1 });
+  if (!hasEntities || !valid1) passed = false;
+  console.log(`  ${hasEntities && valid1 ? '✅' : '❌'} Built-in schema: ${complete1?.output?.entities?.length || 0} entities, valid=${valid1}`);
+
+  // Test 2: Built-in schema (summary)
+  const r2 = await post('/structured', {
+    prompt: 'Summarize this: The global EV market grew 35% in 2025, with China leading at 60% market share. Tesla held 20% of the global market.',
+    schema: 'summary',
+  });
+  const complete2 = r2.events.find(e => e.event === 'complete');
+  const hasSummary = complete2?.output?.summary?.length > 10;
+  checks.push({ name: 'Built-in schema (summary)', ok: hasSummary });
+  if (!hasSummary) passed = false;
+  console.log(`  ${hasSummary ? '✅' : '❌'} Summary schema: ${complete2?.output?.keyPoints?.length || 0} key points`);
+
+  // Test 3: JSON mode (no schema)
+  const r3 = await post('/structured', {
+    prompt: 'Return a JSON object with fields: name, age, city for a fictional person.',
+  });
+  const complete3 = r3.events.find(e => e.event === 'complete');
+  const hasJson = complete3?.parseSuccess === true && complete3?.output?.name;
+  checks.push({ name: 'JSON mode (no schema)', ok: !!hasJson });
+  if (!hasJson) passed = false;
+  console.log(`  ${hasJson ? '✅' : '❌'} JSON mode: parseSuccess=${complete3?.parseSuccess}`);
+
+  // Test 4: Schemas endpoint
+  const schemas = await get('/structured/schemas');
+  const schemaCount = schemas?.schemas?.length || 0;
+  checks.push({ name: 'Schema listing', ok: schemaCount >= 5 });
+  if (schemaCount < 5) passed = false;
+  console.log(`  ${schemaCount >= 5 ? '✅' : '❌'} Schemas available: ${schemaCount}`);
+
+  return { feature: 'Structured Output', passed, checks };
+}
+
+// ─── Test 7: Majority Voting ────────────────────────────
+
+async function testVoting() {
+  console.log('\n🗳️  Test: Majority Voting');
+  let passed = true;
+  const checks = [];
+
+  // Test 1: Similarity strategy (fast, no judge call)
+  const r1 = await post('/vote', {
+    prompt: 'What is 2 + 2?',
+    n: 3,
+    strategy: 'similarity',
+  });
+  const complete1 = r1.events.find(e => e.event === 'complete');
+  const hasOutput = complete1?.output?.length > 0;
+  const hasWinner = complete1?.winner !== undefined;
+  const hasScores = complete1?.scores?.length >= 2;
+  checks.push({ name: 'Similarity voting', ok: hasOutput && hasWinner && hasScores });
+  if (!hasOutput || !hasWinner || !hasScores) passed = false;
+  console.log(`  ${hasOutput && hasWinner ? '✅' : '❌'} Similarity: winner=${complete1?.winner}, ${complete1?.validCandidates} candidates, ${complete1?.duration}ms`);
+
+  // Test 2: Longest strategy
+  const r2 = await post('/vote', {
+    prompt: 'Explain the concept of recursion in programming.',
+    n: 3,
+    strategy: 'longest',
+  });
+  const complete2 = r2.events.find(e => e.event === 'complete');
+  const longestOk = complete2?.output?.length > 50;
+  checks.push({ name: 'Longest voting', ok: longestOk });
+  if (!longestOk) passed = false;
+  console.log(`  ${longestOk ? '✅' : '❌'} Longest: winner=${complete2?.winner}, output=${complete2?.output?.length} chars, ${complete2?.duration}ms`);
+
+  // Test 3: Judge strategy (most thorough but slowest)
+  const r3 = await post('/vote', {
+    prompt: 'What are the key differences between TCP and UDP?',
+    n: 3,
+    strategy: 'judge',
+  });
+  const complete3 = r3.events.find(e => e.event === 'complete');
+  const judgeOk = complete3?.output?.length > 50 && complete3?.scores;
+  checks.push({ name: 'Judge voting', ok: !!judgeOk });
+  if (!judgeOk) passed = false;
+  console.log(`  ${judgeOk ? '✅' : '❌'} Judge: winner=${complete3?.winner}, scores=${JSON.stringify(complete3?.scores?.map(s => s.total))}, ${complete3?.duration}ms`);
+
+  return { feature: 'Majority Voting', passed, checks };
+}
+
 // ─── Main ───────────────────────────────────────────────
 
 async function main() {
@@ -361,6 +470,8 @@ async function main() {
     if (feature === 'all' || feature === 'reflection') results.push(await testReflection());
     if (feature === 'all' || feature === 'skeleton') results.push(await testSkeleton());
     if (feature === 'all' || feature === 'guardrails') results.push(await testPerformanceGuardrails());
+    if (feature === 'all' || feature === 'structured') results.push(await testStructured());
+    if (feature === 'all' || feature === 'voting') results.push(await testVoting());
   } catch (e) {
     console.error(`\n💀 TEST FAILED: ${e.message}`);
     process.exit(1);
