@@ -13,8 +13,8 @@ metadata: {"clawdbot":{"emoji":"🐝","requires":{"bins":["node"]}}}
 
 | 30 tasks via | Time | Cost |
 |--------------|------|------|
-| Opus (sequential) | ~30s | ~$0.50 |
-| Swarm (parallel) | ~1s | ~$0.003 |
+| Opus (sequential) | ~30s | ~0.50 USD |
+| Swarm (parallel) | ~1s | ~0.003 USD |
 
 ## When to Use
 
@@ -281,9 +281,9 @@ curl -X POST http://localhost:9999/vote \
 
 | Strategy | Calls | Extra Cost | Quality |
 |----------|-------|-----------|---------|
-| similarity | N | $0 | Good (consensus) |
-| longest | N | $0 | Decent (heuristic) |
-| judge | N+1 | ~$0.0001 | Best (LLM-scored) |
+| similarity | N | 0 | Good (consensus) |
+| longest | N | 0 | Decent (heuristic) |
+| judge | N+1 | ~0.0001 USD | Best (LLM-scored) |
 
 ## Self-Reflection (v1.3.5)
 
@@ -351,8 +351,8 @@ curl -X POST http://localhost:9999/skeleton \
 
 | Model | Cost per 1M tokens | Relative |
 |-------|-------------------|----------|
-| Claude Opus 4 | ~$15 input / $75 output | 1x |
-| GPT-4o | ~$2.50 input / $10 output | ~7x cheaper |
-| Gemini Flash | ~$0.075 input / $0.30 output | **200x cheaper** |
+| Claude Opus 4 | ~15.00 / 75.00 per 1M tokens (in/out) | 1x |
+| GPT-4o | ~2.50 / 10.00 per 1M tokens (in/out) | ~7x cheaper |
+| Gemini Flash | ~0.075 / 0.30 per 1M tokens (in/out) | **200x cheaper** |
 
 Cache hits are essentially free (~3-5ms, no API call).
